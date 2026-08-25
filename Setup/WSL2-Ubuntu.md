@@ -1,22 +1,32 @@
 # WSL2 and Ubuntu Setup
 
-## Overview
+Ubuntu on WSL2 provides the Linux environment for Docker, Ansible, and Semaphore. In this lab WSL2 runs inside a Windows Server VMware VM, so nested virtualization must be enabled.
 
-Ubuntu on WSL2 provides the Linux environment used for Ansible, Docker, and Semaphore.
+## Command Location Labels
 
-This lab runs WSL2 inside a Windows Server VMware virtual machine, so nested virtualization is required.
+- **PHYSICAL PC** — the computer in front of you.
+- **WINDOWS SERVER VM — POWERSHELL (ADMIN)** — PowerShell inside the VM, opened as Administrator.
+- **VM → WSL UBUNTU** — the Ubuntu terminal opened with `wsl -d Ubuntu`.
 
-## 1. Install WSL
+## 1. Enable Nested Virtualization
 
-Open **PowerShell as Administrator**:
+**Do on: PHYSICAL PC → VMware Workstation, while the Windows Server VM is powered off**
+
+```text
+VM Settings
+→ Processors
+→ Virtualization Engine
+→ Enable “Virtualize Intel VT-x/EPT or AMD-V/RVI”
+```
+
+Start the Windows Server VM.
+
+## 2. Install WSL
+
+**Run on: WINDOWS SERVER VM — POWERSHELL (ADMIN)**
 
 ```powershell
 wsl --version
-```
-
-If WSL is not installed:
-
-```powershell
 wsl --install
 ```
 
@@ -24,21 +34,11 @@ If Windows Server requires manual feature enablement:
 
 ```powershell
 dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
-```
-
-```powershell
 dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
-```
-
-Restart:
-
-```powershell
 Restart-Computer
 ```
 
-<!-- SCREENSHOT: WSL installation -->
-
-## 2. Set WSL2 as Default
+After the VM restarts:
 
 ```powershell
 wsl --set-default-version 2
@@ -46,13 +46,10 @@ wsl --set-default-version 2
 
 ## 3. Install Ubuntu
 
+**Run on: WINDOWS SERVER VM — POWERSHELL (ADMIN)**
+
 ```powershell
 wsl --install -d Ubuntu
-```
-
-Verify:
-
-```powershell
 wsl -l -v
 ```
 
@@ -69,66 +66,23 @@ If Ubuntu is version 1:
 wsl --set-version Ubuntu 2
 ```
 
-Open Ubuntu:
+Open Ubuntu and create the requested Linux username/password:
 
 ```powershell
 wsl -d Ubuntu
 ```
 
-The Ubuntu username used in the lab was:
+The original lab used the Ubuntu username `ubadmin`.
 
-```text
-ubadmin
-```
+<!-- SCREENSHOT: wsl -l -v showing Ubuntu version 2 -->
 
-<!-- SCREENSHOT: Ubuntu installed as WSL2 -->
+## 4. Update Ubuntu
 
-## 4. Nested Virtualization
-
-If WSL2 returns:
-
-```text
-HCS_E_HYPERV_NOT_INSTALLED
-WSL2 is unable to start since virtualization is not enabled on this machine
-```
-
-Shut down the Windows Server VM completely.
-
-In VMware Workstation:
-
-```text
-VM
-→ Settings
-→ Processors
-→ Virtualization Engine
-```
-
-Enable:
-
-```text
-Virtualize Intel VT-x/EPT or AMD-V/RVI
-```
-
-Start the VM and verify:
-
-```powershell
-wsl -l -v
-wsl -d Ubuntu
-```
-
-<!-- SCREENSHOT: VMware nested virtualization -->
-<!-- SCREENSHOT: Working WSL2 -->
-
-## 5. Update Ubuntu
+**Run on: VM → WSL UBUNTU**
 
 ```bash
 sudo apt update
-```
-
-Optional:
-
-```bash
 sudo apt upgrade -y
 ```
 
-<!-- SCREENSHOT: sudo apt update completed -->
+If WSL reports `HCS_E_HYPERV_NOT_INSTALLED`, return to step 1 and enable nested virtualization before reinstalling anything.

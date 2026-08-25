@@ -1,158 +1,180 @@
-# VS Code Remote SSH
+# VS Code Terminal and Ubuntu YAML Workflow
 
-## Overview
+VS Code runs on the physical PC and connects to the Windows Server VM. The integrated terminal then enters WSL Ubuntu. All YAML files are created inside Ubuntu under `~/ansible-lab`.
 
-VS Code runs on the physical PC and connects to the Windows Server VM through SSH.
-
-The working workflow is:
+## Workflow
 
 ```text
-Physical PC VS Code
-→ SSH to Windows Server VM
-→ C:\Users\Administrator\ansible-lab
-→ WSL terminal
-→ docker cp
-→ Semaphore /ansible
+PHYSICAL PC: VS Code
+  → Remote SSH to Windows Server VM
+  → VS Code integrated terminal
+  → wsl -d Ubuntu
+  → create/edit ~/ansible-lab/*.yml inside Ubuntu
+  → docker cp ~/ansible-lab/<file> semaphore:/ansible/<file>
 ```
 
-## 1. Enable OpenSSH on Windows Server
+`~/ansible-lab` is the source of truth. Do not maintain a second working copy under `C:\Users\Administrator`.
 
-PowerShell as Administrator:
+## 1. Connect VS Code to the Windows Server VM
 
-```powershell
-Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Server*'
-```
+Install Microsoft's **Remote - SSH** extension on the physical PC.
 
-If required:
-
-```powershell
-Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
-```
-
-Start SSH:
-
-```powershell
-Start-Service sshd
-Set-Service -Name sshd -StartupType Automatic
-```
-
-Verify:
-
-```powershell
-Get-Service sshd
-netstat -ano | findstr :22
-```
-
-<!-- SCREENSHOT: sshd running -->
-
-## 2. Test from the Physical PC
+**Run on: PHYSICAL PC → POWERSHELL or CMD**
 
 ```powershell
 ssh Administrator@208.8.8.~~
 ```
 
-<!-- SCREENSHOT: Successful PC to VM SSH -->
-
-## 3. VS Code
-
-Install the Microsoft **Remote - SSH** extension.
-
-Add:
-
-```text
-ssh Administrator@208.8.8.~~
-```
-
-Connect with:
+In VS Code run:
 
 ```text
 Remote-SSH: Connect to Host
+ssh Administrator@208.8.8.~~
 ```
 
-The status bar should show:
+The status bar should show `SSH: 208.8.8.~~`.
 
-```text
-SSH: 208.8.8.~~
-```
+<!-- SCREENSHOT: VS Code status bar showing SSH connection to the VM -->
 
-<!-- SCREENSHOT: VS Code Remote SSH connected -->
+## 2. Enter Ubuntu from the VS Code Terminal
 
-## 4. Windows Working Copy
+Open **Terminal → New Terminal**.
 
-Create/use:
-
-```text
-C:\Users\Administrator\ansible-lab
-```
-
-From Ubuntu, the Windows path is:
-
-```text
-/mnt/c/Users/Administrator/ansible-lab
-```
-
-<!-- SCREENSHOT: ANSIBLE-LAB in VS Code Explorer -->
-
-## 5. Enter Ubuntu from VS Code
-
-Open the integrated terminal:
+**Run in: PHYSICAL PC → VS Code integrated terminal connected to the VM**
 
 ```powershell
 wsl -d Ubuntu
 ```
 
-## 6. Copy Playbooks to Semaphore
-
-General command:
+Confirm the current environment:
 
 ```bash
-sudo docker cp /mnt/c/Users/Administrator/ansible-lab/<PLAYBOOK>.yml semaphore:/ansible/<PLAYBOOK>.yml
+whoami
+uname -a
+pwd
 ```
 
-CORE BABA examples:
+## 3. Create the Ubuntu Working Folder
+
+**Run on: VS Code TERMINAL → VM → WSL UBUNTU**
 
 ```bash
-sudo docker cp /mnt/c/Users/Administrator/ansible-lab/baba-lacp.yml semaphore:/ansible/baba-lacp.yml
+mkdir -p ~/ansible-lab
+cd ~/ansible-lab
+pwd
 ```
 
-```bash
-sudo docker cp /mnt/c/Users/Administrator/ansible-lab/baba-dhcp.yml semaphore:/ansible/baba-dhcp.yml
-```
+All files in this tutorial are pasted here.
+
+## 4. Where to Paste a YAML File
+
+Example for `baba-lacp.yml`:
+
+**Run on: VS Code TERMINAL → VM → WSL UBUNTU**
 
 ```bash
-sudo docker cp /mnt/c/Users/Administrator/ansible-lab/baba-vlans.yml semaphore:/ansible/baba-vlans.yml
-```
-
-```bash
-sudo docker cp /mnt/c/Users/Administrator/ansible-lab/baba-camera-dhcp.yml semaphore:/ansible/baba-camera-dhcp.yml
-```
-
-Verify:
-
-```bash
-sudo docker exec semaphore ls -la /ansible
-```
-
-<!-- SCREENSHOT: docker cp from VS Code -->
-<!-- SCREENSHOT: copied files in /ansible -->
-
-## 7. Syntax Check
-
-```bash
-sudo docker exec -it semaphore bash
+cd ~/ansible-lab
+nano baba-lacp.yml
 ```
 
 Then:
 
+1. Copy all YAML from `CORE-BABA/baba-lacp.yml` in this package/repository.
+2. Paste it into the open Nano editor in the Ubuntu terminal.
+3. Replace every `~~` with the assigned monitor number.
+4. Save with **Ctrl+O**, press **Enter**.
+5. Exit with **Ctrl+X**.
+6. Verify the file:
+
 ```bash
-cd /ansible
-ansible-playbook -i inventory.ini baba-lacp.yml --syntax-check
+sed -n '1,240p' ~/ansible-lab/baba-lacp.yml
 ```
 
-Exit:
+Repeat the same procedure using these exact Ubuntu filenames:
 
-```bash
-exit
+```text
+~/ansible-lab/show-version-baba.yml
+~/ansible-lab/baba-base.yml
+~/ansible-lab/baba-lacp.yml
+~/ansible-lab/baba-dhcp.yml
+~/ansible-lab/baba-vlans.yml
+~/ansible-lab/baba-camera-dhcp.yml
+~/ansible-lab/show-version-taas.yml
+~/ansible-lab/taas-base.yml
+~/ansible-lab/taas-trunk.yml
+~/ansible-lab/taas-lacp.yml
+~/ansible-lab/inventory.ini
 ```
 
-> Run the appropriate `docker cp` command again every time a playbook is changed in the Windows VS Code working folder.
+The repository contains two files named `show-version.yml`. Paste the BABA one as `show-version-baba.yml` and the TAAS one as `show-version-taas.yml`.
+
+<!-- SCREENSHOT: Ubuntu terminal listing every file in ~/ansible-lab -->
+
+## 5. Verify No Monitor Placeholders Remain
+
+The reusable repository keeps `~~`, but the Ubuntu working copies must use the assigned number before execution.
+
+**Run on: VS Code TERMINAL → VM → WSL UBUNTU**
+
+```bash
+grep -R -n -- '~~' ~/ansible-lab
+```
+
+If the command prints a YAML or inventory line, edit that file again before copying it to Semaphore.
+
+## 6. Copy Ubuntu Files into the Existing Semaphore Container
+
+**Run on: VS Code TERMINAL → VM → WSL UBUNTU**
+
+```bash
+sudo docker cp ~/ansible-lab/inventory.ini semaphore:/ansible/inventory.ini
+sudo docker cp ~/ansible-lab/show-version-baba.yml semaphore:/ansible/show-version-baba.yml
+sudo docker cp ~/ansible-lab/baba-base.yml semaphore:/ansible/baba-base.yml
+sudo docker cp ~/ansible-lab/baba-lacp.yml semaphore:/ansible/baba-lacp.yml
+sudo docker cp ~/ansible-lab/baba-dhcp.yml semaphore:/ansible/baba-dhcp.yml
+sudo docker cp ~/ansible-lab/baba-vlans.yml semaphore:/ansible/baba-vlans.yml
+sudo docker cp ~/ansible-lab/baba-camera-dhcp.yml semaphore:/ansible/baba-camera-dhcp.yml
+
+sudo docker cp ~/ansible-lab/show-version-taas.yml semaphore:/ansible/show-version-taas.yml
+sudo docker cp ~/ansible-lab/taas-base.yml semaphore:/ansible/taas-base.yml
+sudo docker cp ~/ansible-lab/taas-trunk.yml semaphore:/ansible/taas-trunk.yml
+sudo docker cp ~/ansible-lab/taas-lacp.yml semaphore:/ansible/taas-lacp.yml
+```
+
+Verify file names and non-zero sizes:
+
+```bash
+sudo docker exec semaphore ls -lh /ansible
+```
+
+<!-- SCREENSHOT: Existing Semaphore /ansible directory showing all copied files -->
+
+## 7. Syntax Check
+
+**Run on: VS Code TERMINAL → VM → WSL UBUNTU**
+
+```bash
+sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/show-version-baba.yml --syntax-check
+sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/baba-base.yml --syntax-check
+sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/baba-lacp.yml --syntax-check
+sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/baba-dhcp.yml --syntax-check
+sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/baba-vlans.yml --syntax-check
+sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/baba-camera-dhcp.yml --syntax-check
+sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/show-version-taas.yml --syntax-check
+sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/taas-base.yml --syntax-check
+sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/taas-trunk.yml --syntax-check
+sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/taas-lacp.yml --syntax-check
+```
+
+Syntax checking does not change the Cisco devices.
+
+## 8. Update Cycle
+
+After changing a playbook:
+
+1. edit and save it under `~/ansible-lab` in Ubuntu;
+2. confirm `~~` is gone from the working copy;
+3. run its `sudo docker cp ~/ansible-lab/...` command again;
+4. confirm its size in `/ansible`;
+5. syntax-check it;
+6. run the existing Semaphore template only after confirming the correct `hosts:` group.

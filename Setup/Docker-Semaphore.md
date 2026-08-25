@@ -1,204 +1,151 @@
-# Docker and Semaphore Setup
+# Existing Docker and Semaphore Setup Inside Ubuntu
 
-## 1. Install Docker
+This tutorial keeps the working Semaphore deployment exactly as it is.
 
-Inside Ubuntu:
+> **Do not remove, recreate, migrate, or replace the `semaphore` container.** Do not run a new `docker run` command, change its database, or add new volumes just to follow this guide.
 
-```bash
-sudo apt update
-sudo apt install docker.io -y
+Semaphore remains inside Docker running in WSL Ubuntu. The tutorial only checks it, starts it if stopped, and copies playbooks into its existing `/ansible` directory.
+
+## Command Location Labels
+
+- **VM → WSL UBUNTU** — run after entering Ubuntu with `wsl -d Ubuntu`.
+- **EXISTING SEMAPHORE CONTAINER** — accessed through `sudo docker exec semaphore ...`.
+- **PHYSICAL PC → WEB BROWSER** — used to open the existing Semaphore GUI.
+
+## 1. Enter Ubuntu
+
+**Run on: WINDOWS SERVER VM → POWERSHELL, or the VS Code terminal connected to the VM**
+
+```powershell
+wsl -d Ubuntu
 ```
 
-Verify:
+The prompt should change to the Ubuntu user, such as:
+
+```text
+ubadmin@WIN-...:~$
+```
+
+## 2. Verify the Existing Docker Installation
+
+**Run on: VM → WSL UBUNTU**
 
 ```bash
 docker --version
 which docker
+sudo docker ps
 ```
 
-Expected Docker path:
+The expected container name is `semaphore`.
 
-```text
-/usr/bin/docker
+If it exists but is stopped:
+
+```bash
+sudo docker ps -a
+sudo docker start semaphore
+sudo docker ps
 ```
 
-Try:
+If Docker itself is stopped and `sudo service docker start` works:
 
 ```bash
 sudo service docker start
 sudo docker ps
 ```
 
-## 2. Docker Daemon in WSL
-
-In this lab:
-
-```bash
-sudo service docker start
-```
-
-returned:
-
-```text
-docker: unrecognized service
-```
-
-The working method was:
+If WSL returns `docker: unrecognized service`, use the same working lab method:
 
 ```bash
 sudo dockerd > /tmp/dockerd.log 2>&1 &
-```
-
-Wait a few seconds:
-
-```bash
 sudo docker ps
 ```
 
-If it fails:
+If it still fails:
 
 ```bash
 cat /tmp/dockerd.log
 ```
 
-<!-- SCREENSHOT: Docker daemon running -->
+<!-- SCREENSHOT: Existing semaphore container showing Up inside Ubuntu -->
 
-> `dockerd` may need to be started again after restarting WSL or the Windows Server VM.
+## 3. Verify the Existing `/ansible` Directory
 
-## 3. Install Ansible
-
-```bash
-sudo apt install ansible -y
-```
-
-Verify:
-
-```bash
-ansible --version
-```
-
-## 4. Create the Ansible Workspace
-
-```bash
-mkdir -p ~/ansible-lab
-cd ~/ansible-lab
-```
-
-Verify:
-
-```bash
-pwd
-```
-
-## 5. Pull Semaphore
-
-```bash
-sudo docker pull semaphoreui/semaphore:latest
-```
-
-Verify:
-
-```bash
-sudo docker images
-```
-
-<!-- SCREENSHOT: Semaphore image -->
-
-## 6. Semaphore Container
-
-For a basic fresh deployment:
-
-```bash
-sudo docker run -d \
-  --name semaphore \
-  -p 3000:3000 \
-  semaphoreui/semaphore:latest
-```
-
-Verify:
-
-```bash
-sudo docker ps
-```
-
-If an existing container is stopped:
-
-```bash
-sudo docker start semaphore
-```
-
-Check all containers:
-
-```bash
-sudo docker ps -a
-```
-
-Logs:
-
-```bash
-sudo docker logs semaphore
-```
-
-<!-- SCREENSHOT: Semaphore container running -->
-
-> If an existing Semaphore deployment uses environment variables, volumes, or database containers, preserve that deployment instead of replacing it with the simple example above.
-
-## 7. Create `/ansible`
-
-```bash
-sudo docker exec -u 0 semaphore mkdir -p /ansible
-```
-
-Copy the current workspace:
-
-```bash
-sudo docker cp "$HOME/ansible-lab/." semaphore:/ansible/
-```
-
-Verify:
+**Run on: VM → WSL UBUNTU**
 
 ```bash
 sudo docker exec semaphore ls -la /ansible
 ```
 
-<!-- SCREENSHOT: /ansible directory -->
+If `/ansible` is missing, create only that directory; this does not recreate Semaphore:
 
-## 8. Expose Semaphore to the Physical PC
+```bash
+sudo docker exec -u 0 semaphore mkdir -p /ansible
+sudo docker exec semaphore ls -la /ansible
+```
 
-On Windows Server PowerShell:
+## 4. Keep the Ubuntu Working Folder
+
+The source-of-truth playbooks must live inside Ubuntu:
+
+**Run on: VM → WSL UBUNTU**
+
+```bash
+mkdir -p ~/ansible-lab
+cd ~/ansible-lab
+pwd
+```
+
+Expected path for the original lab user:
+
+```text
+/home/ubadmin/ansible-lab
+```
+
+`~/ansible-lab` also works if a different Ubuntu username is used.
+
+## 5. Verify Ansible and Paramiko Without Changing Semaphore
+
+**Run on: VM → WSL UBUNTU**
+
+```bash
+ansible --version
+python3 -c "import paramiko; print(paramiko.__version__)"
+```
+
+Check the existing container environment:
+
+```bash
+sudo docker exec semaphore ansible --version
+sudo docker exec semaphore python3 -c "import paramiko; print(paramiko.__version__)"
+```
+
+Do not upgrade or downgrade the working container unless the existing tasks actually fail and the troubleshooting section specifically matches the error.
+
+## 6. Verify Existing Semaphore GUI Access
+
+**Run on: WINDOWS SERVER VM → POWERSHELL**
 
 ```powershell
 Test-NetConnection localhost -Port 3000
 Test-NetConnection 208.8.8.~~ -Port 3000
-```
-
-Allow port 3000:
-
-```powershell
-New-NetFirewallRule -DisplayName "Semaphore 3000" -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow
-```
-
-Get the current WSL IP:
-
-```powershell
-wsl -d Ubuntu hostname -I
-```
-
-Use the WSL address, not the Docker bridge address.
-
-Create the port proxy:
-
-```powershell
-netsh interface portproxy add v4tov4 listenaddress=208.8.8.~~ listenport=3000 connectaddress=<WSL-IP> connectport=3000
-```
-
-Verify:
-
-```powershell
 netsh interface portproxy show all
 ```
 
-<!-- SCREENSHOT: portproxy configuration -->
-<!-- SCREENSHOT: Semaphore GUI from physical PC -->
+**Open on: PHYSICAL PC → WEB BROWSER**
 
-> The WSL IP can change after a restart. Update the port proxy if the GUI stops loading.
+```text
+http://208.8.8.~~:3000
+```
+
+If the existing GUI works, leave its container, database, users, projects, credentials, and port configuration unchanged.
+
+## 7. What This Tutorial Changes
+
+The remaining guides only:
+
+1. create or edit YAML under `~/ansible-lab` in Ubuntu;
+2. copy those files into the existing `semaphore:/ansible` directory;
+3. add/update Semaphore inventory, repository, and task-template entries;
+4. run the documented Cisco playbooks.
+
+They do not rebuild Semaphore.
