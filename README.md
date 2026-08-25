@@ -1,8 +1,8 @@
 # Cisco Automation with Ansible and Semaphore
 
-This repository is a complete, reproducible tutorial for the Cisco automation lab built with a physical PC, a Windows Server VMware VM, WSL2 Ubuntu, Docker, the existing Semaphore container, Ansible, CORE BABA, and CORE TAAS.
+This repository is a complete, reproducible tutorial for the Cisco automation lab built with a physical PC, VS Code Remote-SSH, a Windows Server VMware VM, WSL2 Ubuntu, Docker, the existing Semaphore container, Ansible, CORE BABA, and CORE TAAS.
 
-The working playbooks live inside Ubuntu at `~/ansible-lab`. Semaphore stays in its existing Docker container inside Ubuntu and is not rebuilt or migrated by this tutorial.
+VS Code runs on the physical PC and saves the working YAML over SSH into `C:\Users\Administrator\ansible-lab` on the Windows Server VM. WSL sees the same folder at `/mnt/c/Users/Administrator/ansible-lab`. Semaphore stays in its existing Docker container inside Ubuntu and is not rebuilt or migrated.
 
 `~~` is the monitor/student-number placeholder. Before using any inventory or playbook, replace every `~~` with the assigned number. For monitor 71, `10.~~.1.4` becomes `10.71.1.4` and `vlan ~~` becomes `vlan 71`.
 
@@ -10,16 +10,17 @@ The working playbooks live inside Ubuntu at `~/ansible-lab`. Semaphore stays in 
 
 ```text
 PHYSICAL PC
-  ├── VS Code
-  ├── SSH to Windows Server VM
+  ├── VS Code Remote-SSH
+  ├── edit/save YAML over SSH
   └── Browser to Semaphore
           |
           v
 WINDOWS SERVER VM (208.8.8.~~)
+  └── C:\Users\Administrator\ansible-lab (source-of-truth YAML)
           |
           v
 WSL2 UBUNTU
-  ├── ~/ansible-lab (source-of-truth YAML)
+  ├── /mnt/c/Users/Administrator/ansible-lab (same VM folder)
   ├── Docker
   └── existing Semaphore container :3000
           |
@@ -39,7 +40,8 @@ Follow these guides in order:
 4. [Semaphore project, inventory, repository, and templates](Setup/Semaphore-Project.md)
 5. [CORE BABA tutorial](CORE-BABA/README.md)
 6. [CORE TAAS tutorial](CORE-TAAS/README.md)
-7. [Troubleshooting](Troubleshooting.md)
+7. [Reusable multi-monitor deployment](Reusable-Multi-Monitor/README.md)
+8. [Troubleshooting](Troubleshooting.md)
 
 ## Repository Contents
 
@@ -61,12 +63,17 @@ Cisco-Ansible/
 │   ├── baba-dhcp.yml
 │   ├── baba-vlans.yml
 │   └── baba-camera-dhcp.yml
-└── CORE-TAAS/
+├── CORE-TAAS/
+│   ├── README.md
+│   ├── show-version.yml
+│   ├── taas-base.yml
+│   ├── taas-trunk.yml
+│   └── taas-lacp.yml
+└── Reusable-Multi-Monitor/
     ├── README.md
-    ├── show-version.yml
-    ├── taas-base.yml
-    ├── taas-trunk.yml
-    └── taas-lacp.yml
+    ├── inventory.example.ini
+    ├── CORE-BABA/ (six variable-based YAML files)
+    └── CORE-TAAS/ (four variable-based YAML files)
 ```
 
 ## Safety and Scope
@@ -77,6 +84,7 @@ Cisco-Ansible/
 - `baba-camera-dhcp.yml` is deliberately marked **DO NOT RUN** until real camera client identifiers replace `001a.xxxx.yyyy`.
 - `interface.yml`, `baba.yml`, and other earlier test files are not part of the final Day1SirRob playbook set.
 - Back up the device configuration and run the read-only `show-version.yml` test before any configuration playbook.
+- The original Day 1 files retain `~~` for exact reusable documentation. Use `Reusable-Multi-Monitor/` when managing several monitor numbers with one set of playbooks.
 
 ## Recommended Run Order
 

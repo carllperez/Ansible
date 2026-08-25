@@ -184,25 +184,43 @@ sudo docker exec -u 0 semaphore mkdir -p /ansible
 sudo docker exec semaphore ls -la /ansible
 ```
 
-Copy the missing file again:
+Copy the missing file again from the VS Code Remote-SSH folder mounted in WSL:
 
 ```bash
-sudo docker cp ~/ansible-lab/<PLAYBOOK>.yml semaphore:/ansible/<PLAYBOOK>.yml
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/<PLAYBOOK>.yml semaphore:/ansible/<PLAYBOOK>.yml
 sudo docker exec semaphore ls -lh /ansible/<PLAYBOOK>.yml
 ```
 
-If the copy reports `0B`, check the source file under `~/ansible-lab` in Ubuntu and confirm it was saved before retrying.
+If the copy reports `0B`, check `C:\Users\Administrator\ansible-lab` in the VS Code Remote-SSH window and confirm the file was saved to the VM before retrying.
 
-## Updated Ubuntu YAML Does Not Appear in Semaphore
+## Updated VS Code YAML Does Not Appear in Semaphore
 
-Ubuntu `~/ansible-lab` is the source of truth, while container `/ansible` is the runtime copy used by Semaphore.
+`C:\Users\Administrator\ansible-lab` on the Windows Server VM is the source of truth. WSL sees it at `/mnt/c/Users/Administrator/ansible-lab`, while container `/ansible` is the runtime copy used by Semaphore.
 
 **Run after every save on: VS Code TERMINAL → VM → WSL UBUNTU**
 
 ```bash
-sudo docker cp ~/ansible-lab/<PLAYBOOK>.yml semaphore:/ansible/<PLAYBOOK>.yml
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/<PLAYBOOK>.yml semaphore:/ansible/<PLAYBOOK>.yml
 sudo docker exec semaphore ls -lh /ansible/<PLAYBOOK>.yml
 ```
+
+## VS Code File Does Not Appear in WSL
+
+Confirm that VS Code is in the Remote-SSH window for the correct Windows Server VM and that the file was saved.
+
+**Run in: VS Code TERMINAL → WINDOWS SERVER VM — POWERSHELL**
+
+```powershell
+Get-ChildItem C:\Users\Administrator\ansible-lab
+```
+
+**Then run on: VS Code TERMINAL → VM → WSL UBUNTU**
+
+```bash
+ls -lh /mnt/c/Users/Administrator/ansible-lab
+```
+
+Both commands must show the same saved filenames. If they do not, VS Code is open on a different machine/folder or the file has not been saved to the VM.
 
 ## Playbook Accidentally Targets Both Switches
 
