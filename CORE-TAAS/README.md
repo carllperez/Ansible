@@ -1,5 +1,7 @@
 # CORE TAAS — Complete Day 1 Sir Rob Automation Tutorial
 
+If you are new to VS Code, WSL, Ansible, YAML, or Semaphore, complete [START HERE](../START-HERE.md) before following this page.
+
 This guide contains every command block in `DAY1-May5-SirRob.txt` that is explicitly assigned to CORE TAAS or shared by `TAAS/BABA`:
 
 1. CORE TAAS basic Layer 3 configuration.
@@ -8,6 +10,10 @@ This guide contains every command block in `DAY1-May5-SirRob.txt` that is explic
 4. The trunk, EtherChannel, and Port-Channel bandwidth verification commands included with those blocks.
 
 The source labels DHCP, VLAN/access-port placement, and camera reservations for the CORE BABA leaf switch. Those commands are intentionally not copied to TAAS.
+
+## What This Guide Changes
+
+The TAAS configuration playbooks can change the switch hostname, SVI addresses, Fa0/10-12 trunking, and LACP EtherChannel. `show-version-taas.yml` is read-only; `taas-base.yml`, `taas-trunk.yml`, and `taas-lacp.yml` make changes.
 
 ## Monitor-Number Placeholder
 
@@ -19,6 +25,8 @@ Example for monitor 71:
 COREtaas-~~  → COREtaas-71
 10.~~.1.2   → 10.71.1.2
 ```
+
+> **Never enter `~~` on a Cisco switch.** It is only a documentation placeholder. Replace it with the assigned number before pasting a bootstrap command or copying a YAML file to Semaphore.
 
 ## TAAS Addressing from Day 1
 
@@ -39,10 +47,10 @@ VS Code on the physical PC saves these files over SSH into the Windows Server VM
 
 | Repository YAML | Save through VS Code on the VM as | Source block |
 |---|---|---|
-| `CORE-TAAS/show-version.yml` | `C:\Users\Administrator\ansible-lab\show-version-taas.yml` | Read-only Ansible connection test; not a Day 1 configuration block |
-| `CORE-TAAS/taas-base.yml` | `C:\Users\Administrator\ansible-lab\taas-base.yml` | CORE SWITCH SA TAAS — basic Layer 3 |
-| `CORE-TAAS/taas-trunk.yml` | `C:\Users\Administrator\ansible-lab\taas-trunk.yml` | TAAS/BABA trunk ports |
-| `CORE-TAAS/taas-lacp.yml` | `C:\Users\Administrator\ansible-lab\taas-lacp.yml` | @taas/BABA LACP EtherChannel |
+| [show-version.yml](show-version.yml) | `C:\Users\Administrator\ansible-lab\show-version-taas.yml` | Read-only Ansible connection test; not a Day 1 configuration block |
+| [taas-base.yml](taas-base.yml) | `C:\Users\Administrator\ansible-lab\taas-base.yml` | CORE SWITCH SA TAAS — basic Layer 3 |
+| [taas-trunk.yml](taas-trunk.yml) | `C:\Users\Administrator\ansible-lab\taas-trunk.yml` | TAAS/BABA trunk ports |
+| [taas-lacp.yml](taas-lacp.yml) | `C:\Users\Administrator\ansible-lab\taas-lacp.yml` | @taas/BABA LACP EtherChannel |
 
 Every TAAS YAML file uses:
 
@@ -55,6 +63,8 @@ Do not change it to `hosts: cisco`, because the combined group also contains BAB
 ## Day 1 Source Command Reference
 
 The following Cisco blocks show the complete TAAS scope being converted. Cisco abbreviations are retained here for comparison; the YAML uses normalized full interface and command names.
+
+These blocks are a reference for comparing the playbooks with Sir Rob’s source. They are not one large paste block. Follow the numbered bootstrap and Semaphore sections below for the actual procedure.
 
 ### A. CORE TAAS Basic Layer 3
 
@@ -163,7 +173,7 @@ show running-config
 copy running-config startup-config
 
 configure terminal
-hostname COREtaas-~~
+hostname COREtaas-71
 enable secret pass
 service password-encryption
 no logging console
@@ -171,7 +181,7 @@ no ip domain-lookup
 
 interface Vlan1
  no shutdown
- ip address 10.~~.1.2 255.255.255.0
+ ip address 10.71.1.2 255.255.255.0
  description MGMTDATA
  exit
 
@@ -199,6 +209,8 @@ end
 write memory
 ```
 
+The example above is for monitor 71. For a different monitor, replace every `71` before entering the commands.
+
 The SSH block is an automation prerequisite, not presented as part of Sir Rob's TAAS base block.
 
 Verify:
@@ -208,6 +220,17 @@ show ip interface brief
 show ip ssh
 show running-config | include hostname
 ```
+
+Then test from Ubuntu. Change `71` to the assigned monitor number.
+
+**Run on: VS Code TERMINAL → VM → WSL UBUNTU**
+
+```bash
+ping -c 4 10.71.1.2
+ssh admin@10.71.1.2
+```
+
+The bootstrap checkpoint passes only when the hostname and management address are correct, `show ip ssh` reports SSH enabled, and the manual Ubuntu SSH login succeeds. Stop here if any check fails.
 
 <!-- SCREENSHOT: TAAS Vlan1 address and SSH enabled -->
 
@@ -221,6 +244,8 @@ show running-config | include hostname
 4. Replace every `~~` with the assigned monitor number.
 5. Confirm each YAML says `hosts: taas`.
 6. Save with **Ctrl+S**. VS Code transfers the changes over SSH to the VM.
+
+For the exact beginner copy procedure, see [How to Copy a YAML File into VS Code](../START-HERE.md#how-to-copy-a-yaml-file-into-vs-code).
 
 Enter WSL from the VS Code terminal and list the same VM files:
 
@@ -404,7 +429,14 @@ It then runs the source verification:
 show interfaces trunk
 ```
 
-Run the BABA trunk/LACP playbook on the other switch so the links match.
+The trunk and LACP configuration spans both switches. Use this complete order:
+
+1. Run `TAAS — Trunk Ports`.
+2. Run `BABA — Trunk and LACP` on the other switch.
+3. Run `TAAS — LACP EtherChannel` immediately afterward.
+4. Verify the bundle on both switches.
+
+It is normal for the links or bundle to remain down while only one side is configured.
 
 ### 8.4 LACP EtherChannel
 
@@ -454,6 +486,14 @@ Fa0/12(P)
 ```
 
 Exact flags vary by IOS. `D` indicates a down interface or bundle and must be investigated.
+
+The TAAS walkthrough is complete when:
+
+- the final Semaphore task recap has `failed=0` and `unreachable=0`;
+- the expected hostname and monitor-specific SVI addresses are present;
+- trunking is active on the intended interfaces;
+- Port-channel1 and Fa0/10-12 are bundled on both switches;
+- the final configuration has been saved according to your organization’s change procedure.
 
 <!-- SCREENSHOT: Successful TAAS base task -->
 
