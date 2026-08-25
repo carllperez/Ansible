@@ -15,7 +15,7 @@ PHYSICAL PC
   └── Browser to Semaphore
           |
           v
-WINDOWS SERVER VM (208.8.8.~~)
+WINDOWS SERVER VM (208.8.8.200)
   └── C:\Users\Administrator\ansible-lab (source-of-truth YAML)
           |
           v
@@ -36,7 +36,7 @@ Follow these guides in order:
 
 1. [WSL2 and Ubuntu](Setup/WSL2-Ubuntu.md)
 2. [Verify the existing Docker, Ansible, and Semaphore setup](Setup/Docker-Semaphore.md)
-3. [VS Code terminal and Ubuntu YAML workflow](Setup/VSCode-Remote-SSH.md)
+3. [VS Code Remote-SSH and Windows VM YAML workflow](Setup/VSCode-Remote-SSH.md)
 4. [Semaphore project, inventory, repository, and templates](Setup/Semaphore-Project.md)
 5. [CORE BABA tutorial](CORE-BABA/README.md)
 6. [CORE TAAS tutorial](CORE-TAAS/README.md)

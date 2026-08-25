@@ -71,7 +71,7 @@ Starting the existing container does not recreate it. If the container is truly 
 
 ```powershell
 Test-NetConnection localhost -Port 3000
-Test-NetConnection 208.8.8.~~ -Port 3000
+Test-NetConnection 208.8.8.200 -Port 3000
 wsl -d Ubuntu hostname -I
 netsh interface portproxy show all
 ```
@@ -79,15 +79,15 @@ netsh interface portproxy show all
 If the WSL IP changed, replace the old proxy:
 
 ```powershell
-netsh interface portproxy delete v4tov4 listenaddress=208.8.8.~~ listenport=3000
-netsh interface portproxy add v4tov4 listenaddress=208.8.8.~~ listenport=3000 connectaddress=<NEW-WSL-IP> connectport=3000
+netsh interface portproxy delete v4tov4 listenaddress=208.8.8.200 listenport=3000
+netsh interface portproxy add v4tov4 listenaddress=208.8.8.200 listenport=3000 connectaddress=<NEW-WSL-IP> connectport=3000
 New-NetFirewallRule -DisplayName "Semaphore 3000" -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow
 ```
 
 Then open on the physical PC:
 
 ```text
-http://208.8.8.~~:3000
+http://208.8.8.200:3000
 ```
 
 ## PC Can SSH to the VM but Cannot Ping It
@@ -305,7 +305,7 @@ Replace both placeholders with the correct, distinct identifiers before deployme
 wsl -l -v
 Get-Service sshd
 Test-NetConnection localhost -Port 3000
-Test-NetConnection 208.8.8.~~ -Port 3000
+Test-NetConnection 208.8.8.200 -Port 3000
 netsh interface portproxy show all
 ```
 
