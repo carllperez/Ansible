@@ -1,7 +1,7 @@
 ---
-- name: Configure CORE BABA Base Layer 3
-  hosts: cisco
-  gather_facts: no
+- name: Configure CORE BABA base Layer 3
+  hosts: baba
+  gather_facts: false
 
   tasks:
     - name: Configure CORE BABA base settings

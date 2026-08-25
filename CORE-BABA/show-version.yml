@@ -1,7 +1,7 @@
 ---
-- name: Show Cisco Version
-  hosts: cisco
-  gather_facts: no
+- name: Show CORE BABA version
+  hosts: baba
+  gather_facts: false
 
   tasks:
     - name: Run show version

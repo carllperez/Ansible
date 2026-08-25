@@ -1,7 +1,7 @@
 ---
 - name: Configure CORE BABA DHCP
-  hosts: cisco
-  gather_facts: no
+  hosts: baba
+  gather_facts: false
 
   tasks:
     - name: Configure DHCP excluded addresses
@@ -14,7 +14,8 @@
 
     - name: Configure MGMTDATA DHCP pool
       ios_config:
-        parents: [ip dhcp pool MGMTDATA]
+        parents:
+          - ip dhcp pool MGMTDATA
         lines:
           - network 10.~~.1.0 255.255.255.0
           - default-router 10.~~.1.4
@@ -23,7 +24,8 @@
 
     - name: Configure WIFIDATA DHCP pool
       ios_config:
-        parents: [ip dhcp pool WIFIDATA]
+        parents:
+          - ip dhcp pool WIFIDATA
         lines:
           - network 10.~~.10.0 255.255.255.0
           - default-router 10.~~.10.4
@@ -32,7 +34,8 @@
 
     - name: Configure IPCCTV DHCP pool
       ios_config:
-        parents: [ip dhcp pool IPCCTV]
+        parents:
+          - ip dhcp pool IPCCTV
         lines:
           - network 10.~~.50.0 255.255.255.0
           - default-router 10.~~.50.4
@@ -41,7 +44,8 @@
 
     - name: Configure VOICEVLAN DHCP pool
       ios_config:
-        parents: [ip dhcp pool VOICEVLAN]
+        parents:
+          - ip dhcp pool VOICEVLAN
         lines:
           - network 10.~~.100.0 255.255.255.0
           - default-router 10.~~.100.4

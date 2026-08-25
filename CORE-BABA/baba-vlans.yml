@@ -1,7 +1,7 @@
 ---
-- name: Configure CORE BABA VLANs and Access Ports
-  hosts: cisco
-  gather_facts: no
+- name: Configure CORE BABA VLANs and access ports
+  hosts: baba
+  gather_facts: false
 
   tasks:
     - name: Create VLAN 10
