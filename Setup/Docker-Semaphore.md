@@ -83,25 +83,23 @@ sudo docker exec -u 0 semaphore mkdir -p /ansible
 sudo docker exec semaphore ls -la /ansible
 ```
 
-## 4. Keep the Ubuntu Working Folder
+## 4. Verify the VS Code Folder from Ubuntu
 
-The source-of-truth playbooks must live inside Ubuntu:
+VS Code Remote-SSH saves the source-of-truth files on the Windows Server VM at `C:\Users\Administrator\ansible-lab`. WSL accesses that same folder through `/mnt/c`.
 
 **Run on: VM → WSL UBUNTU**
 
 ```bash
-mkdir -p ~/ansible-lab
-cd ~/ansible-lab
-pwd
+ls -la /mnt/c/Users/Administrator/ansible-lab
 ```
 
-Expected path for the original lab user:
+Expected mounted path:
 
 ```text
-/home/ubadmin/ansible-lab
+/mnt/c/Users/Administrator/ansible-lab
 ```
 
-`~/ansible-lab` also works if a different Ubuntu username is used.
+Do not create a second working copy under the Ubuntu home directory. Docker remains inside Ubuntu; only the YAML source is stored in the VS Code folder on the VM.
 
 ## 5. Verify Ansible and Paramiko Without Changing Semaphore
 
@@ -143,9 +141,10 @@ If the existing GUI works, leave its container, database, users, projects, crede
 
 The remaining guides only:
 
-1. create or edit YAML under `~/ansible-lab` in Ubuntu;
-2. copy those files into the existing `semaphore:/ansible` directory;
-3. add/update Semaphore inventory, repository, and task-template entries;
-4. run the documented Cisco playbooks.
+1. create or edit YAML in VS Code under `C:\Users\Administrator\ansible-lab` on the VM;
+2. access the same files from WSL at `/mnt/c/Users/Administrator/ansible-lab`;
+3. copy those files into the existing `semaphore:/ansible` directory;
+4. add/update Semaphore inventory, repository, and task-template entries;
+5. run the documented Cisco playbooks.
 
 They do not rebuild Semaphore.
