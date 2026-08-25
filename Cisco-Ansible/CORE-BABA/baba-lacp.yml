@@ -1,0 +1,27 @@
+---
+- name: Configure CORE BABA Trunk and LACP
+  hosts: cisco
+  gather_facts: no
+
+  tasks:
+    - name: Configure Fa0/10-12 as trunks
+      ios_config:
+        parents:
+          - interface range FastEthernet0/10 - 12
+        lines:
+          - shutdown
+          - no shutdown
+          - switchport trunk encapsulation dot1q
+          - switchport mode trunk
+
+    - name: Configure LACP EtherChannel
+      ios_config:
+        parents:
+          - interface range FastEthernet0/10 - 12
+        lines:
+          - channel-protocol lacp
+          - channel-group 1 mode active
+
+    - name: Save configuration
+      ios_config:
+        save_when: modified
