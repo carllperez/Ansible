@@ -2,6 +2,29 @@
 
 This directory provides the safe variable-based version of the Day 1 CORE BABA and CORE TAAS playbooks. The original `CORE-BABA/` and `CORE-TAAS/` files keep the requested `~~` documentation placeholder; these reusable files use `{{ monitor }}` so one playbook can support monitor 71, 72, 73, and other assigned numbers.
 
+> **Advanced, optional path:** Complete one device with the original BABA or TAAS tutorial first. Use this directory after you understand the inventory, read-only test, backups, and verification steps. It does not rebuild or change the existing Semaphore installation.
+
+## Where the Target Monitor Is Set
+
+The target is set in two places for safety:
+
+```ini
+[baba]
+baba72 ansible_host=10.72.1.4 monitor=72
+```
+
+- `monitor=72` stores the monitor number used by `{{ monitor }}` inside the YAML.
+- `baba72` is the inventory name of that one switch.
+- `ansible_host=10.72.1.4` is the reachable management address.
+
+At run time, both command options must name the same inventory device:
+
+```text
+--extra-vars target_device=baba72 --limit baba72
+```
+
+`target_device=baba72` tells the playbook which device was approved. `--limit baba72` prevents Ansible from expanding the run to another inventory host. Do not type a separate monitor number at run time, do not replace `{{ monitor }}`, and do not use `~~` in the reusable YAML.
+
 ## Safety Design
 
 Every configuration playbook:
@@ -61,16 +84,16 @@ Copy each repository YAML to the matching path in the VS Code Remote-SSH VM fold
 
 | Repository file | VS Code path on Windows Server VM |
 |---|---|
-| `Reusable-Multi-Monitor/CORE-BABA/show-version.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-BABA\show-version.yml` |
-| `Reusable-Multi-Monitor/CORE-BABA/baba-base.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-BABA\baba-base.yml` |
-| `Reusable-Multi-Monitor/CORE-BABA/baba-lacp.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-BABA\baba-lacp.yml` |
-| `Reusable-Multi-Monitor/CORE-BABA/baba-dhcp.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-BABA\baba-dhcp.yml` |
-| `Reusable-Multi-Monitor/CORE-BABA/baba-vlans.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-BABA\baba-vlans.yml` |
-| `Reusable-Multi-Monitor/CORE-BABA/baba-camera-dhcp.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-BABA\baba-camera-dhcp.yml` |
-| `Reusable-Multi-Monitor/CORE-TAAS/show-version.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-TAAS\show-version.yml` |
-| `Reusable-Multi-Monitor/CORE-TAAS/taas-base.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-TAAS\taas-base.yml` |
-| `Reusable-Multi-Monitor/CORE-TAAS/taas-trunk.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-TAAS\taas-trunk.yml` |
-| `Reusable-Multi-Monitor/CORE-TAAS/taas-lacp.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-TAAS\taas-lacp.yml` |
+| [CORE-BABA/show-version.yml](CORE-BABA/show-version.yml) | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-BABA\show-version.yml` |
+| [CORE-BABA/baba-base.yml](CORE-BABA/baba-base.yml) | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-BABA\baba-base.yml` |
+| [CORE-BABA/baba-lacp.yml](CORE-BABA/baba-lacp.yml) | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-BABA\baba-lacp.yml` |
+| [CORE-BABA/baba-dhcp.yml](CORE-BABA/baba-dhcp.yml) | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-BABA\baba-dhcp.yml` |
+| [CORE-BABA/baba-vlans.yml](CORE-BABA/baba-vlans.yml) | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-BABA\baba-vlans.yml` |
+| [CORE-BABA/baba-camera-dhcp.yml](CORE-BABA/baba-camera-dhcp.yml) | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-BABA\baba-camera-dhcp.yml` |
+| [CORE-TAAS/show-version.yml](CORE-TAAS/show-version.yml) | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-TAAS\show-version.yml` |
+| [CORE-TAAS/taas-base.yml](CORE-TAAS/taas-base.yml) | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-TAAS\taas-base.yml` |
+| [CORE-TAAS/taas-trunk.yml](CORE-TAAS/taas-trunk.yml) | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-TAAS\taas-trunk.yml` |
+| [CORE-TAAS/taas-lacp.yml](CORE-TAAS/taas-lacp.yml) | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-TAAS\taas-lacp.yml` |
 
 Do not replace `{{ monitor }}`. Ansible resolves it separately for every inventory host.
 
@@ -99,6 +122,8 @@ sudo docker exec semaphore ansible-playbook -i /ansible/reusable/inventory.ini /
 ```
 
 The read-only test must finish with `failed=0` and `unreachable=0`.
+
+Before any configuration run, read the command from left to right and confirm that the inventory line, `target_device`, and `--limit` all identify the same physical switch.
 
 ## 6. Semaphore Templates
 
@@ -131,6 +156,18 @@ sudo docker exec semaphore ansible-playbook -i /ansible/reusable/inventory.ini /
 ```
 
 Review check-mode output before the real configuration run. Network modules and IOS versions can differ in check-mode behavior, so it is an additional safeguard rather than a substitute for backups and verification.
+
+For a beginner-safe first reusable run, stop after `show-version.yml`. Continue to a configuration playbook only after another operator has confirmed the inventory address, physical switch, monitor number, backup, and matching target/limit values.
+
+## Reusable Deployment Checklist
+
+- The target switch already has a reachable management IP and SSH.
+- The inventory entry is in the correct `[baba]` or `[taas]` group.
+- The inventory hostname, address, and `monitor` value agree.
+- `target_device` and `--limit` contain the same one inventory hostname.
+- The read-only show-version run succeeds with no failed or unreachable hosts.
+- The switch configuration is backed up before a configuration playbook runs.
+- BABA and TAAS trunk/LACP changes follow the paired order in their main tutorials.
 
 ## Camera Reservations
 
