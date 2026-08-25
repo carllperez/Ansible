@@ -2,6 +2,31 @@
 
 Every command below includes its run location. Do not paste PowerShell commands into Ubuntu or Cisco commands into Windows.
 
+## How to Use This Page
+
+1. Stop the configuration run. Do not keep pressing **Run** when the same task fails.
+2. Save the complete first error and the final Ansible recap; the first error is usually more useful than the last line.
+3. Identify where the failure occurs: physical PC, Windows Server VM, Ubuntu, Semaphore container, or Cisco switch.
+4. Run only the read-only checks in the matching section below.
+5. Change one thing at a time, then repeat the read-only `Show Version` task before any configuration task.
+
+Never publish inventory passwords, private keys, full device configurations, or Semaphore credentials in screenshots, GitHub issues, or chat messages.
+
+## Quick Triage
+
+| Symptom | Start with |
+|---|---|
+| Ubuntu will not open | WSL2 virtualization section |
+| `docker ps` fails | Docker daemon section |
+| Semaphore page will not load | Semaphore container and port 3000 sections |
+| Manual Cisco SSH fails | Cisco SSH and legacy algorithm sections |
+| `syntax-check` fails | Missing file, empty file, placeholder, and YAML line named in the error |
+| Ansible reports `unreachable` | Inventory address, network reachability, credentials, and SSH |
+| Ansible reports `failed` after connecting | First failed task and Cisco IOS message in the output |
+| EtherChannel stays down | LACP section; inspect both switches |
+
+Do not run a configuration playbook merely to test connectivity. Use the matching `show-version` playbook.
+
 ## WSL2: `HCS_E_HYPERV_NOT_INSTALLED`
 
 Cause: nested virtualization is not exposed to the Windows Server VMware VM.

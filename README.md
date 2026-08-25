@@ -2,6 +2,12 @@
 
 This repository is a complete, reproducible tutorial for the Cisco automation lab built with a physical PC, VS Code Remote-SSH, a Windows Server VMware VM, WSL2 Ubuntu, Docker, the existing Semaphore container, Ansible, CORE BABA, and CORE TAAS.
 
+## New to Ansible, Linux, or Cisco Automation?
+
+Begin with [Start Here — Beginner Orientation](START-HERE.md). It explains the terminology, the five places where commands are entered, the difference between read-only and configuration tasks, and the checkpoint that must pass before each next step.
+
+Do not start by pressing a configuration button in Semaphore. First identify the assigned monitor number, confirm the physical switches and cabling, back up the switches, and complete the read-only connection tests.
+
 VS Code runs on the physical PC and saves the working YAML over SSH into `C:\Users\Administrator\ansible-lab` on the Windows Server VM. WSL sees the same folder at `/mnt/c/Users/Administrator/ansible-lab`. Semaphore stays in its existing Docker container inside Ubuntu and is not rebuilt or migrated.
 
 `~~` is the monitor/student-number placeholder. Before using any inventory or playbook, replace every `~~` with the assigned number. For monitor 71, `10.~~.1.4` becomes `10.71.1.4` and `vlan ~~` becomes `vlan 71`.
@@ -34,20 +40,22 @@ ANSIBLE OVER SSH
 
 Follow these guides in order:
 
-1. [WSL2 and Ubuntu](Setup/WSL2-Ubuntu.md)
-2. [Verify the existing Docker, Ansible, and Semaphore setup](Setup/Docker-Semaphore.md)
-3. [VS Code Remote-SSH and Windows VM YAML workflow](Setup/VSCode-Remote-SSH.md)
-4. [Semaphore project, inventory, repository, and templates](Setup/Semaphore-Project.md)
-5. [CORE BABA tutorial](CORE-BABA/README.md)
-6. [CORE TAAS tutorial](CORE-TAAS/README.md)
-7. [Reusable multi-monitor deployment](Reusable-Multi-Monitor/README.md)
-8. [Troubleshooting](Troubleshooting.md)
+1. [Beginner orientation](START-HERE.md)
+2. [WSL2 and Ubuntu](Setup/WSL2-Ubuntu.md)
+3. [Verify the existing Docker, Ansible, and Semaphore setup](Setup/Docker-Semaphore.md)
+4. [VS Code Remote-SSH and Windows VM YAML workflow](Setup/VSCode-Remote-SSH.md)
+5. [Semaphore project, inventory, repository, and templates](Setup/Semaphore-Project.md)
+6. [CORE BABA tutorial](CORE-BABA/README.md)
+7. [CORE TAAS tutorial](CORE-TAAS/README.md)
+8. [Reusable multi-monitor deployment](Reusable-Multi-Monitor/README.md)
+9. [Troubleshooting](Troubleshooting.md)
 
 ## Repository Contents
 
 ```text
 Cisco-Ansible/
 ├── README.md
+├── START-HERE.md
 ├── Troubleshooting.md
 ├── inventory.example.ini
 ├── Setup/
