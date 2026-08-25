@@ -1,0 +1,65 @@
+---
+- name: Configure reusable CORE BABA camera DHCP reservations
+  hosts: "{{ target_device | default('NO_TARGET_SELECTED') }}"
+  gather_facts: false
+  serial: 1
+  any_errors_fatal: true
+
+  pre_tasks:
+    - name: Validate BABA monitor and management address
+      assert:
+        that:
+          - inventory_hostname == target_device
+          - "'baba' in group_names"
+          - monitor is defined
+          - (monitor | int) >= 1
+          - (monitor | int) <= 254
+          - (monitor | string) == ((monitor | int) | string)
+          - (ansible_host | string) == ('10.' ~ (monitor | string) ~ '.1.4')
+        fail_msg: "BABA inventory safety check failed for {{ inventory_hostname }}."
+
+    - name: Require reviewed camera identifiers
+      assert:
+        that:
+          - camera6_client_identifier is defined
+          - camera8_client_identifier is defined
+          - camera6_client_identifier != camera8_client_identifier
+          - "'xxxx' not in camera6_client_identifier"
+          - "'xxxx' not in camera8_client_identifier"
+        fail_msg: "Add two real, distinct camera client identifiers to the target host before running this playbook."
+
+  tasks:
+    - name: Enable IP routing
+      ios_config:
+        lines:
+          - ip routing
+
+    - name: Configure CAMERA6 DHCP reservation
+      ios_config:
+        parents:
+          - ip dhcp pool CAMERA6
+        lines:
+          - "host 10.{{ monitor }}.50.6 255.255.255.0"
+          - "client-identifier {{ camera6_client_identifier }}"
+
+    - name: Configure CAMERA8 DHCP reservation
+      ios_config:
+        parents:
+          - ip dhcp pool CAMERA8
+        lines:
+          - "host 10.{{ monitor }}.50.8 255.255.255.0"
+          - "client-identifier {{ camera8_client_identifier }}"
+
+    - name: Verify DHCP bindings
+      ios_command:
+        commands:
+          - show ip dhcp binding
+      register: camera_dhcp_verification
+
+    - name: Display DHCP binding verification
+      debug:
+        var: camera_dhcp_verification.stdout_lines
+
+    - name: Save configuration
+      ios_config:
+        save_when: modified

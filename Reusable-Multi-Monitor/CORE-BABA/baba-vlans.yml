@@ -1,0 +1,126 @@
+---
+- name: Configure reusable CORE BABA VLANs and access ports
+  hosts: "{{ target_device | default('NO_TARGET_SELECTED') }}"
+  gather_facts: false
+  serial: 1
+  any_errors_fatal: true
+
+  pre_tasks:
+    - name: Validate BABA monitor and management address
+      assert:
+        that:
+          - inventory_hostname == target_device
+          - "'baba' in group_names"
+          - monitor is defined
+          - (monitor | int) >= 1
+          - (monitor | int) <= 254
+          - (monitor | string) == ((monitor | int) | string)
+          - (ansible_host | string) == ('10.' ~ (monitor | string) ~ '.1.4')
+        fail_msg: "BABA inventory safety check failed for {{ inventory_hostname }}."
+
+  tasks:
+    - name: Create VLAN 10
+      ios_config:
+        parents:
+          - vlan 10
+        lines:
+          - name WIFIVLAN
+
+    - name: Create VLAN 50
+      ios_config:
+        parents:
+          - vlan 50
+        lines:
+          - name IPCameraVLAN
+
+    - name: Create VLAN 69
+      ios_config:
+        parents:
+          - vlan 69
+        lines:
+          - name vlanNIrobert
+
+    - name: Create VLAN 70
+      ios_config:
+        parents:
+          - vlan 70
+        lines:
+          - name EXTRAVLAN
+
+    - name: Create monitor-number VLAN
+      ios_config:
+        parents:
+          - "vlan {{ monitor }}"
+        lines:
+          - name HRD-POLICY
+
+    - name: Create VLAN 100
+      ios_config:
+        parents:
+          - vlan 100
+        lines:
+          - name VOICEVLAN
+
+    - name: Configure Fa0/2
+      ios_config:
+        parents:
+          - interface FastEthernet0/2
+        lines:
+          - switchport mode access
+          - switchport access vlan 10
+
+    - name: Configure Fa0/4
+      ios_config:
+        parents:
+          - interface FastEthernet0/4
+        lines:
+          - switchport mode access
+          - switchport access vlan 10
+
+    - name: Configure Fa0/6
+      ios_config:
+        parents:
+          - interface FastEthernet0/6
+        lines:
+          - switchport mode access
+          - switchport access vlan 50
+
+    - name: Configure Fa0/8
+      ios_config:
+        parents:
+          - interface FastEthernet0/8
+        lines:
+          - switchport mode access
+          - switchport access vlan 50
+
+    - name: Configure Fa0/3
+      ios_config:
+        parents:
+          - interface FastEthernet0/3
+        lines:
+          - switchport mode access
+          - switchport access vlan 100
+
+    - name: Configure Fa0/5 for voice
+      ios_config:
+        parents:
+          - interface FastEthernet0/5
+        lines:
+          - switchport mode access
+          - switchport voice vlan 100
+          - mls qos trust device cisco-phone
+          - switchport access vlan 1
+
+    - name: Configure Fa0/7 for voice
+      ios_config:
+        parents:
+          - interface FastEthernet0/7
+        lines:
+          - switchport mode access
+          - switchport voice vlan 100
+          - mls qos trust device cisco-phone
+          - switchport access vlan 1
+
+    - name: Save configuration
+      ios_config:
+        save_when: modified

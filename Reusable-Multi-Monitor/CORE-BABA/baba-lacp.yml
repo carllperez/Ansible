@@ -1,0 +1,53 @@
+---
+- name: Configure reusable CORE BABA trunk and LACP
+  hosts: "{{ target_device | default('NO_TARGET_SELECTED') }}"
+  gather_facts: false
+  serial: 1
+  any_errors_fatal: true
+
+  pre_tasks:
+    - name: Validate BABA monitor and management address
+      assert:
+        that:
+          - inventory_hostname == target_device
+          - "'baba' in group_names"
+          - monitor is defined
+          - (monitor | int) >= 1
+          - (monitor | int) <= 254
+          - (monitor | string) == ((monitor | int) | string)
+          - (ansible_host | string) == ('10.' ~ (monitor | string) ~ '.1.4')
+        fail_msg: "BABA inventory safety check failed for {{ inventory_hostname }}."
+
+  tasks:
+    - name: Configure Fa0/10-12 as trunks
+      ios_config:
+        parents:
+          - interface range FastEthernet0/10 - 12
+        lines:
+          - no shutdown
+          - switchport trunk encapsulation dot1q
+          - switchport mode trunk
+
+    - name: Configure LACP EtherChannel
+      ios_config:
+        parents:
+          - interface range FastEthernet0/10 - 12
+        lines:
+          - channel-group 1 mode active
+          - channel-protocol lacp
+
+    - name: Save configuration
+      ios_config:
+        save_when: modified
+
+    - name: Verify trunk and EtherChannel
+      ios_command:
+        commands:
+          - show interfaces trunk
+          - show etherchannel summary
+          - show interfaces port-channel 1 | include BW
+      register: verification
+
+    - name: Display verification
+      debug:
+        var: verification.stdout_lines

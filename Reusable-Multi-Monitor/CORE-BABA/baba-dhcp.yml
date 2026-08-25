@@ -1,0 +1,73 @@
+---
+- name: Configure reusable CORE BABA DHCP
+  hosts: "{{ target_device | default('NO_TARGET_SELECTED') }}"
+  gather_facts: false
+  serial: 1
+  any_errors_fatal: true
+
+  pre_tasks:
+    - name: Validate BABA monitor and management address
+      assert:
+        that:
+          - inventory_hostname == target_device
+          - "'baba' in group_names"
+          - monitor is defined
+          - (monitor | int) >= 1
+          - (monitor | int) <= 254
+          - (monitor | string) == ((monitor | int) | string)
+          - (ansible_host | string) == ('10.' ~ (monitor | string) ~ '.1.4')
+        fail_msg: "BABA inventory safety check failed for {{ inventory_hostname }}."
+
+  tasks:
+    - name: Configure DHCP excluded addresses
+      ios_config:
+        lines:
+          - "ip dhcp excluded-address 10.{{ monitor }}.1.1 10.{{ monitor }}.1.100"
+          - "ip dhcp excluded-address 10.{{ monitor }}.10.1 10.{{ monitor }}.10.100"
+          - "ip dhcp excluded-address 10.{{ monitor }}.50.1 10.{{ monitor }}.50.100"
+          - "ip dhcp excluded-address 10.{{ monitor }}.100.1 10.{{ monitor }}.100.100"
+
+    - name: Configure MGMTDATA DHCP pool
+      ios_config:
+        parents:
+          - ip dhcp pool MGMTDATA
+        lines:
+          - "network 10.{{ monitor }}.1.0 255.255.255.0"
+          - "default-router 10.{{ monitor }}.1.4"
+          - domain-name MGMTDATA.COM
+          - "dns-server 10.{{ monitor }}.1.10"
+
+    - name: Configure WIFIDATA DHCP pool
+      ios_config:
+        parents:
+          - ip dhcp pool WIFIDATA
+        lines:
+          - "network 10.{{ monitor }}.10.0 255.255.255.0"
+          - "default-router 10.{{ monitor }}.10.4"
+          - domain-name WIFIDATA.COM
+          - "dns-server 10.{{ monitor }}.1.10"
+
+    - name: Configure IPCCTV DHCP pool
+      ios_config:
+        parents:
+          - ip dhcp pool IPCCTV
+        lines:
+          - "network 10.{{ monitor }}.50.0 255.255.255.0"
+          - "default-router 10.{{ monitor }}.50.4"
+          - domain-name IPCCTV.COM
+          - "dns-server 10.{{ monitor }}.1.10"
+
+    - name: Configure VOICEVLAN DHCP pool
+      ios_config:
+        parents:
+          - ip dhcp pool VOICEVLAN
+        lines:
+          - "network 10.{{ monitor }}.100.0 255.255.255.0"
+          - "default-router 10.{{ monitor }}.100.4"
+          - domain-name VOICEVLAN.COM
+          - "dns-server 10.{{ monitor }}.1.10"
+          - "option 150 ip 10.{{ monitor }}.100.8"
+
+    - name: Save configuration
+      ios_config:
+        save_when: modified

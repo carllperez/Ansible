@@ -1,0 +1,100 @@
+---
+- name: Configure reusable CORE BABA base Layer 3
+  hosts: "{{ target_device | default('NO_TARGET_SELECTED') }}"
+  gather_facts: false
+  serial: 1
+  any_errors_fatal: true
+
+  pre_tasks:
+    - name: Validate BABA monitor and management address
+      assert:
+        that:
+          - inventory_hostname == target_device
+          - "'baba' in group_names"
+          - monitor is defined
+          - (monitor | int) >= 1
+          - (monitor | int) <= 254
+          - (monitor | string) == ((monitor | int) | string)
+          - (ansible_host | string) == ('10.' ~ (monitor | string) ~ '.1.4')
+        fail_msg: "BABA inventory safety check failed for {{ inventory_hostname }}."
+
+    - name: Display selected BABA target
+      debug:
+        msg: "Configuring {{ inventory_hostname }} as COREbaba-{{ monitor }} at {{ ansible_host }}"
+
+  tasks:
+    - name: Configure CORE BABA base settings
+      ios_config:
+        lines:
+          - "hostname COREbaba-{{ monitor }}"
+          - enable secret pass
+          - service password-encryption
+          - no logging console
+          - no ip domain-lookup
+
+    - name: Configure console
+      ios_config:
+        parents:
+          - line console 0
+        lines:
+          - password pass
+          - login
+          - exec-timeout 0 0
+
+    - name: Configure VTY
+      ios_config:
+        parents:
+          - line vty 0 14
+        lines:
+          - password pass
+          - login
+          - exec-timeout 0 0
+
+    - name: Configure routed uplink Gi0/1
+      ios_config:
+        parents:
+          - interface GigabitEthernet0/1
+        lines:
+          - no shutdown
+          - no switchport
+          - "ip address 10.{{ monitor }}.{{ monitor }}.4 255.255.255.0"
+
+    - name: Configure VLAN 1 management SVI
+      ios_config:
+        parents:
+          - interface Vlan1
+        lines:
+          - no shutdown
+          - "ip address 10.{{ monitor }}.1.4 255.255.255.0"
+          - description MGMTDATA
+
+    - name: Configure VLAN 10 SVI
+      ios_config:
+        parents:
+          - interface Vlan10
+        lines:
+          - no shutdown
+          - "ip address 10.{{ monitor }}.10.4 255.255.255.0"
+          - description WIRELESS
+
+    - name: Configure VLAN 50 SVI
+      ios_config:
+        parents:
+          - interface Vlan50
+        lines:
+          - no shutdown
+          - "ip address 10.{{ monitor }}.50.4 255.255.255.0"
+          - description IPCCTV
+
+    - name: Configure VLAN 100 SVI
+      ios_config:
+        parents:
+          - interface Vlan100
+        lines:
+          - no shutdown
+          - "ip address 10.{{ monitor }}.100.4 255.255.255.0"
+          - description VOICEVLAN
+
+    - name: Save configuration
+      ios_config:
+        save_when: modified
