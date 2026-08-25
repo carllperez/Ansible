@@ -11,7 +11,7 @@ The source labels DHCP, VLAN/access-port placement, and camera reservations for 
 
 ## Monitor-Number Placeholder
 
-`~~` represents the assigned monitor/student number. Keep `~~` in the reusable GitHub files. Replace it only in the working copies under `~/ansible-lab` inside Ubuntu.
+`~~` represents the assigned monitor/student number. Keep `~~` in the reusable GitHub files. Replace it only in the working copies saved through VS Code Remote-SSH under `C:\Users\Administrator\ansible-lab` on the VM.
 
 Example for monitor 71:
 
@@ -33,16 +33,16 @@ COREtaas-~~  → COREtaas-71
 | EtherChannel | `Port-channel1` |
 | Ansible inventory group | `taas` |
 
-## Complete File Set and Paste Locations
+## Complete File Set and VS Code Locations
 
-All editable files live inside Ubuntu:
+VS Code on the physical PC saves these files over SSH into the Windows Server VM:
 
-| Repository YAML | Paste/save inside Ubuntu as | Source block |
+| Repository YAML | Save through VS Code on the VM as | Source block |
 |---|---|---|
-| `CORE-TAAS/show-version.yml` | `~/ansible-lab/show-version-taas.yml` | Read-only Ansible connection test; not a Day 1 configuration block |
-| `CORE-TAAS/taas-base.yml` | `~/ansible-lab/taas-base.yml` | CORE SWITCH SA TAAS — basic Layer 3 |
-| `CORE-TAAS/taas-trunk.yml` | `~/ansible-lab/taas-trunk.yml` | TAAS/BABA trunk ports |
-| `CORE-TAAS/taas-lacp.yml` | `~/ansible-lab/taas-lacp.yml` | @taas/BABA LACP EtherChannel |
+| `CORE-TAAS/show-version.yml` | `C:\Users\Administrator\ansible-lab\show-version-taas.yml` | Read-only Ansible connection test; not a Day 1 configuration block |
+| `CORE-TAAS/taas-base.yml` | `C:\Users\Administrator\ansible-lab\taas-base.yml` | CORE SWITCH SA TAAS — basic Layer 3 |
+| `CORE-TAAS/taas-trunk.yml` | `C:\Users\Administrator\ansible-lab\taas-trunk.yml` | TAAS/BABA trunk ports |
+| `CORE-TAAS/taas-lacp.yml` | `C:\Users\Administrator\ansible-lab\taas-lacp.yml` | @taas/BABA LACP EtherChannel |
 
 Every TAAS YAML file uses:
 
@@ -211,67 +211,44 @@ show running-config | include hostname
 
 <!-- SCREENSHOT: TAAS Vlan1 address and SSH enabled -->
 
-## 3. Create the Ubuntu Working Files
+## 3. Create the Working Files through VS Code
 
-**Run on: PHYSICAL PC → VS Code terminal → WINDOWS SERVER VM**
+**Do in: PHYSICAL PC → VS Code Remote-SSH window → Windows Server VM folder**
+
+1. Open `C:\Users\Administrator\ansible-lab`.
+2. Create `show-version-taas.yml`, `taas-base.yml`, `taas-trunk.yml`, and `taas-lacp.yml`.
+3. Copy the complete matching YAML from `CORE-TAAS/`.
+4. Replace every `~~` with the assigned monitor number.
+5. Confirm each YAML says `hosts: taas`.
+6. Save with **Ctrl+S**. VS Code transfers the changes over SSH to the VM.
+
+Enter WSL from the VS Code terminal and list the same VM files:
 
 ```powershell
 wsl -d Ubuntu
 ```
 
-**Then run on: VS Code TERMINAL → VM → WSL UBUNTU**
-
 ```bash
-mkdir -p ~/ansible-lab
-cd ~/ansible-lab
-```
-
-Create each file with Nano:
-
-```bash
-nano show-version-taas.yml
-nano taas-base.yml
-nano taas-trunk.yml
-nano taas-lacp.yml
-```
-
-For each file:
-
-1. Copy the entire matching YAML from `CORE-TAAS/`.
-2. Paste it into Nano.
-3. Replace every `~~` with the assigned monitor number.
-4. Confirm the YAML says `hosts: taas`.
-5. Save with **Ctrl+O**, press **Enter**.
-6. Exit with **Ctrl+X**.
-
-List the Ubuntu files:
-
-```bash
-ls -lh ~/ansible-lab
+ls -lh /mnt/c/Users/Administrator/ansible-lab
 ```
 
 Check for unreplaced monitor placeholders:
 
 ```bash
 grep -n -- '~~' \
-  ~/ansible-lab/show-version-taas.yml \
-  ~/ansible-lab/taas-base.yml \
-  ~/ansible-lab/taas-trunk.yml \
-  ~/ansible-lab/taas-lacp.yml
+  /mnt/c/Users/Administrator/ansible-lab/show-version-taas.yml \
+  /mnt/c/Users/Administrator/ansible-lab/taas-base.yml \
+  /mnt/c/Users/Administrator/ansible-lab/taas-trunk.yml \
+  /mnt/c/Users/Administrator/ansible-lab/taas-lacp.yml
 ```
 
 The command should return no lines before deployment.
 
-<!-- SCREENSHOT: TAAS YAML files under ~/ansible-lab in Ubuntu -->
+<!-- SCREENSHOT: TAAS YAML files open in the VS Code Remote-SSH VM folder -->
 
 ## 4. Add TAAS to the Existing Inventory
 
-Open the Ubuntu inventory:
-
-```bash
-cd ~/ansible-lab
-nano inventory.ini
-```
+Create or edit the inventory through VS Code at `C:\Users\Administrator\ansible-lab\inventory.ini`.
 
 The full inventory should include separate BABA and TAAS groups:
 
@@ -294,12 +271,12 @@ ansible_network_os=ios
 ansible_ssh_common_args='-o KexAlgorithms=+diffie-hellman-group14-sha1 -o HostKeyAlgorithms=+ssh-rsa -o Ciphers=+aes128-cbc -o MACs=+hmac-sha1'
 ```
 
-Replace every `~~`, save, and exit Nano.
+Replace every `~~` and save the VS Code file with **Ctrl+S**.
 
 Check the TAAS target:
 
 ```bash
-grep -n -A2 '^\[taas\]' ~/ansible-lab/inventory.ini
+grep -n -A2 '^\[taas\]' /mnt/c/Users/Administrator/ansible-lab/inventory.ini
 ```
 
 ## 5. Copy TAAS Files to the Existing Semaphore Container
@@ -307,11 +284,11 @@ grep -n -A2 '^\[taas\]' ~/ansible-lab/inventory.ini
 **Run on: VS Code TERMINAL → VM → WSL UBUNTU**
 
 ```bash
-sudo docker cp ~/ansible-lab/inventory.ini semaphore:/ansible/inventory.ini
-sudo docker cp ~/ansible-lab/show-version-taas.yml semaphore:/ansible/show-version-taas.yml
-sudo docker cp ~/ansible-lab/taas-base.yml semaphore:/ansible/taas-base.yml
-sudo docker cp ~/ansible-lab/taas-trunk.yml semaphore:/ansible/taas-trunk.yml
-sudo docker cp ~/ansible-lab/taas-lacp.yml semaphore:/ansible/taas-lacp.yml
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/inventory.ini semaphore:/ansible/inventory.ini
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/show-version-taas.yml semaphore:/ansible/show-version-taas.yml
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/taas-base.yml semaphore:/ansible/taas-base.yml
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/taas-trunk.yml semaphore:/ansible/taas-trunk.yml
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/taas-lacp.yml semaphore:/ansible/taas-lacp.yml
 ```
 
 Verify filenames and non-zero sizes:
