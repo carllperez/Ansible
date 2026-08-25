@@ -2,6 +2,12 @@
 
 This tutorial recreates the CORE BABA work from the original lab and keeps every Day1SirRob-derived configuration block as a standalone YAML file.
 
+If you are new to VS Code, WSL, Ansible, YAML, or Semaphore, complete [START HERE](../START-HERE.md) before following this page.
+
+## What This Guide Changes
+
+The BABA configuration playbooks can change the switch hostname, Layer 3 addresses, trunk/LACP ports, DHCP pools, VLANs, and access/voice port assignments. `show-version-baba.yml` is read-only; the other BABA playbooks make changes. The camera reservation playbook remains blocked until its real client identifiers are known.
+
 ## Addressing
 
 | Item | Template value |
@@ -16,18 +22,29 @@ This tutorial recreates the CORE BABA work from the original lab and keeps every
 
 Replace every `~~` with the assigned monitor number in the working copies, not in this reusable template repository.
 
+For monitor 71, the replacements include:
+
+| Template | Working value |
+|---|---|
+| `COREbaba-~~` | `COREbaba-71` |
+| `10.~~.1.4` | `10.71.1.4` |
+| `10.~~.10.4` | `10.71.10.4` |
+| `VLAN ~~` | `VLAN 71` |
+
+> **Never enter `~~` on a Cisco switch.** It is only a documentation placeholder. Replace it with the assigned number before pasting a bootstrap command or copying a YAML file to Semaphore.
+
 ## Files and Exact VS Code Locations
 
 Use VS Code Remote-SSH on the physical PC to open `C:\Users\Administrator\ansible-lab` on the Windows Server VM. Create and save the working files there; do not recreate them with Nano in Ubuntu.
 
 | Copy YAML from | Save through VS Code on the VM as | Purpose |
 |---|---|---|
-| `CORE-BABA/show-version.yml` | `C:\Users\Administrator\ansible-lab\show-version-baba.yml` | Read-only SSH/Ansible test |
-| `CORE-BABA/baba-base.yml` | `C:\Users\Administrator\ansible-lab\baba-base.yml` | Base and SVI configuration |
-| `CORE-BABA/baba-lacp.yml` | `C:\Users\Administrator\ansible-lab\baba-lacp.yml` | Fa0/10-12 trunk and LACP |
-| `CORE-BABA/baba-dhcp.yml` | `C:\Users\Administrator\ansible-lab\baba-dhcp.yml` | DHCP pools and exclusions |
-| `CORE-BABA/baba-vlans.yml` | `C:\Users\Administrator\ansible-lab\baba-vlans.yml` | VLANs and access/voice ports |
-| `CORE-BABA/baba-camera-dhcp.yml` | `C:\Users\Administrator\ansible-lab\baba-camera-dhcp.yml` | Camera reservations; do not run yet |
+| [show-version.yml](show-version.yml) | `C:\Users\Administrator\ansible-lab\show-version-baba.yml` | Read-only SSH/Ansible test |
+| [baba-base.yml](baba-base.yml) | `C:\Users\Administrator\ansible-lab\baba-base.yml` | Base and SVI configuration |
+| [baba-lacp.yml](baba-lacp.yml) | `C:\Users\Administrator\ansible-lab\baba-lacp.yml` | Fa0/10-12 trunk and LACP |
+| [baba-dhcp.yml](baba-dhcp.yml) | `C:\Users\Administrator\ansible-lab\baba-dhcp.yml` | DHCP pools and exclusions |
+| [baba-vlans.yml](baba-vlans.yml) | `C:\Users\Administrator\ansible-lab\baba-vlans.yml` | VLANs and access/voice ports |
+| [baba-camera-dhcp.yml](baba-camera-dhcp.yml) | `C:\Users\Administrator\ansible-lab\baba-camera-dhcp.yml` | Camera reservations; do not run yet |
 
 All BABA YAML files use `hosts: baba`. This is intentional. Do not change them to `hosts: cisco`, because the combined group also contains TAAS.
 
@@ -42,6 +59,8 @@ The Day 1 YAML keeps Sir Rob's VTY `password pass` and `login` commands. SSH set
 3. Copy the complete matching repository YAML into each file.
 4. Replace every `~~` with the assigned monitor number in the working copy.
 5. Save with **Ctrl+S**. VS Code transfers the saved file over SSH to the VM.
+
+For the exact beginner copy procedure, see [How to Copy a YAML File into VS Code](../START-HERE.md#how-to-copy-a-yaml-file-into-vs-code).
 
 Open the VS Code terminal and enter Ubuntu only for verification and Docker commands:
 
@@ -69,12 +88,17 @@ The command should return no lines. The camera client identifiers are different 
 
 Ansible cannot configure a completely blank switch until the switch has a reachable management IP and SSH. Perform this minimum bootstrap from the console.
 
+If the switch already contains configuration, display it and save it before making changes. If your organization requires an external backup, also copy the displayed configuration to its approved storage location.
+
 **Run on: CORE BABA → CISCO CLI**
 
 ```cisco
 enable
+show running-config
+copy running-config startup-config
+
 configure terminal
-hostname COREbaba-~~
+hostname COREbaba-71
 enable secret pass
 service password-encryption
 no logging console
@@ -82,7 +106,7 @@ no ip domain-lookup
 
 interface Vlan1
  no shutdown
- ip address 10.~~.1.4 255.255.255.0
+ ip address 10.71.1.4 255.255.255.0
  description MGMTDATA
  exit
 
@@ -101,6 +125,8 @@ end
 write memory
 ```
 
+The example above is for monitor 71. For a different monitor, replace every `71` before entering the commands.
+
 If the IOS image does not accept `crypto key generate rsa modulus 1024`, enter `crypto key generate rsa` and type `1024` when prompted.
 
 Verify:
@@ -110,6 +136,17 @@ show ip interface brief
 show ip ssh
 show running-config | include hostname
 ```
+
+Then test from Ubuntu. Change `71` to the assigned monitor number.
+
+**Run on: VS Code TERMINAL → VM → WSL UBUNTU**
+
+```bash
+ping -c 4 10.71.1.4
+ssh admin@10.71.1.4
+```
+
+The bootstrap checkpoint passes only when the hostname and management address are correct, `show ip ssh` reports SSH enabled, and the manual Ubuntu SSH login succeeds. Stop here if any check fails; Ansible will not repair a switch it cannot reach.
 
 <!-- SCREENSHOT: CORE BABA Vlan1 and SSH verification -->
 
@@ -236,7 +273,14 @@ An SVI can remain down until its VLAN exists and has an active member/trunk; tha
 
 ### 6.3 Trunk and LACP
 
-Run `BABA — Trunk and LACP`, then run the matching TAAS LACP playbook so both ends agree.
+These three links depend on configuration at both ends. Use this order:
+
+1. Run `TAAS — Trunk Ports` and confirm it succeeds.
+2. Run `BABA — Trunk and LACP`.
+3. Run `TAAS — LACP EtherChannel` immediately afterward.
+4. Verify the bundle on both switches.
+
+It is normal for the bundle to remain down between steps while only one side is configured.
 
 **Verify on: CORE BABA → CISCO CLI**
 
@@ -303,6 +347,15 @@ show vlan brief
 show ip dhcp pool
 show ip dhcp binding
 ```
+
+The BABA walkthrough is complete when:
+
+- the final Semaphore task recap has `failed=0` and `unreachable=0`;
+- the expected hostname and monitor-specific addresses are present;
+- Port-channel1 and Fa0/10-12 are bundled on both switches;
+- the expected VLANs, ports, and DHCP pools appear;
+- `BABA — Camera Reservations` has not been run unless both real identifiers were reviewed;
+- the final configuration has been saved according to your organization’s change procedure.
 
 <!-- SCREENSHOT: Successful BABA Semaphore templates -->
 
