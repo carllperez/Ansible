@@ -6,6 +6,17 @@ This tutorial keeps the working Semaphore deployment exactly as it is.
 
 Semaphore remains inside Docker running in WSL Ubuntu. The tutorial only checks it, starts it if stopped, and copies playbooks into its existing `/ansible` directory.
 
+## What You Are Checking
+
+- **Docker** runs background environments called containers.
+- **`semaphore`** is the name of the existing Semaphore container.
+- **`/ansible`** is the playbook folder inside that container.
+- **Port 3000** is the web connection used to open Semaphore.
+
+This page is successful when the container is running, `/ansible` is visible, and the physical PC can open `http://208.8.8.200:3000`.
+
+> If no `semaphore` container exists at all, stop. This guide preserves and verifies the original deployment; it does not create a different database or replacement container.
+
 ## Command Location Labels
 
 - **VM → WSL UBUNTU** — run after entering Ubuntu with `wsl -d Ubuntu`.
@@ -37,6 +48,15 @@ sudo docker ps
 ```
 
 The expected container name is `semaphore`.
+
+Example of the important part of a passing result:
+
+```text
+NAMES       STATUS
+semaphore   Up ...
+```
+
+`docker ps` lists only running containers. If `semaphore` is not shown, check stopped containers before concluding that it is missing.
 
 If it exists but is stopped:
 
@@ -182,6 +202,17 @@ http://208.8.8.200:3000
 If the existing GUI works, leave its container, database, users, projects, credentials, and port configuration unchanged.
 
 The WSL address can change after WSL or the VM restarts. If `localhost:3000` still works but the VM address stops working, repeat only the WSL-address and port-proxy checks above.
+
+## Passing Checkpoint
+
+Do not continue to the VS Code or Semaphore project guides until all four checks pass:
+
+```text
+[ ] Ubuntu opens with wsl -d Ubuntu
+[ ] sudo docker ps shows semaphore as Up
+[ ] sudo docker exec semaphore ls -la /ansible succeeds
+[ ] http://208.8.8.200:3000 opens from the physical PC
+```
 
 ## 7. What This Tutorial Changes
 

@@ -14,6 +14,16 @@ WSL Ubuntu sees that same VM folder as:
 
 The Windows VM folder is the source of truth. Do not recreate the same files with Nano under the Ubuntu home directory.
 
+## What This Means for a Beginner
+
+- VS Code is installed and opened on the physical PC.
+- **Remote-SSH** makes that VS Code window edit files located on the Windows Server VM.
+- **Source of truth** means this is the one authoritative editable copy.
+- WSL does not have a second copy; `/mnt/c/...` is Ubuntu's view of the same Windows folder.
+- Semaphore does use a separate runtime copy inside the container, so every saved change must be copied again with `docker cp`.
+
+You do not need the VS Code WSL extension for this workflow. The VS Code window remains connected to Windows Server over SSH; only the integrated terminal enters Ubuntu when Docker commands are needed.
+
 ## Actual File Flow
 
 ~~~text
@@ -45,6 +55,8 @@ ssh Administrator@208.8.8.200
 
 The lower-left status area should show SSH: 208.8.8.200.
 
+If the status area does not show that connection, stop. Files created in an ordinary local VS Code window will be saved on the wrong computer.
+
 <!-- SCREENSHOT: VS Code showing the Remote-SSH connection to the Windows Server VM -->
 
 ## 2. Open the YAML Folder on the VM
@@ -56,6 +68,8 @@ The lower-left status area should show SSH: 208.8.8.200.
 3. Trust the folder if VS Code asks.
 4. Create and edit all YAML and inventory files in this remote folder.
 5. Save with **Ctrl+S**. Remote-SSH writes the saved content to the VM.
+
+When VS Code asks whether you trust the folder, confirm only after checking that the displayed path is exactly the VM folder above.
 
 Create the folder first if it does not exist:
 
@@ -115,6 +129,20 @@ Open the VS Code integrated terminal. It initially runs on the Windows Server VM
 ~~~powershell
 wsl -d Ubuntu
 ~~~
+
+The prompt should change from a Windows PowerShell prompt such as:
+
+```text
+PS C:\Users\Administrator>
+```
+
+to an Ubuntu prompt similar to:
+
+```text
+ubadmin@WIN-...:~$
+```
+
+Do not type `PS C:\Users\Administrator>` or `ubadmin@WIN-...:~$`; those are prompt examples, not commands.
 
 **Then run on: VS Code TERMINAL → VM → WSL UBUNTU**
 
@@ -198,3 +226,16 @@ After changing a playbook:
 8. run the intended Semaphore template only after confirming its target.
 
 There is no Nano editing step and no second source-of-truth copy under the Ubuntu home directory.
+
+## Passing Checkpoint
+
+Before opening Semaphore, confirm:
+
+```text
+[ ] VS Code shows SSH: 208.8.8.200
+[ ] The open folder is C:\Users\Administrator\ansible-lab
+[ ] Ctrl+S saves without an error
+[ ] WSL lists the same files under /mnt/c/Users/Administrator/ansible-lab
+[ ] The required files exist inside semaphore:/ansible with non-zero sizes
+[ ] Every syntax check succeeds
+```

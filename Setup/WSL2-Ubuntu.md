@@ -6,6 +6,14 @@ This guide includes both the short installation path and the manual Windows Serv
 
 > **Existing working system:** Run the verification step first. If Ubuntu already reports `VERSION 2`, do not reinstall WSL or Ubuntu.
 
+## What You Are Doing
+
+- **WSL2** lets Windows run an Ubuntu Linux environment.
+- **Nested virtualization** lets WSL2 run inside the Windows Server VMware VM.
+- **Ubuntu** is where the existing Docker and Semaphore services run.
+
+This page has two paths. If Ubuntu already shows `VERSION 2`, use only the verification and update steps. Use the installation steps only when Ubuntu is missing or still uses WSL1.
+
 ## Command Location Labels
 
 - **PHYSICAL PC** — the computer in front of you.
@@ -183,3 +191,14 @@ sudo apt upgrade -y
 ```
 
 At this point Ubuntu is ready for the existing Docker, Ansible, and Semaphore verification guide.
+
+## Passing Checkpoint
+
+Do not continue to Docker until all of these are true:
+
+- `wsl -l -v` lists Ubuntu with `VERSION 2`;
+- `wsl -d Ubuntu` opens an Ubuntu prompt without a virtualization error;
+- `sudo apt update` completes successfully;
+- an existing working Ubuntu installation was preserved instead of reinstalled.
+
+Continue with [Docker and the existing Semaphore container](Docker-Semaphore.md).
