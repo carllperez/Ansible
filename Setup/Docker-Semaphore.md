@@ -76,12 +76,14 @@ cat /tmp/dockerd.log
 sudo docker exec semaphore ls -la /ansible
 ```
 
-If `/ansible` is missing, create only that directory; this does not recreate Semaphore:
+If `/ansible` is missing, stop. Do not create it blindly. First confirm that this is the same container and Docker environment used by the working Semaphore installation:
 
 ```bash
-sudo docker exec -u 0 semaphore mkdir -p /ansible
-sudo docker exec semaphore ls -la /ansible
+sudo docker inspect semaphore --format '{{.Name}} {{.Config.Image}}'
+sudo docker exec semaphore pwd
 ```
+
+A missing `/ansible` directory can mean the wrong Docker daemon or container is running. Resolve that before copying files or changing the container.
 
 ## 4. Verify the VS Code Folder from Ubuntu
 
@@ -119,23 +121,67 @@ sudo docker exec semaphore python3 -c "import paramiko; print(paramiko.__version
 
 Do not upgrade or downgrade the working container unless the existing tasks actually fail and the troubleshooting section specifically matches the error.
 
-## 6. Verify Existing Semaphore GUI Access
+## 6. Verify or Restore Existing Semaphore GUI Access
 
 **Run on: WINDOWS SERVER VM → POWERSHELL**
 
 ```powershell
 Test-NetConnection localhost -Port 3000
-Test-NetConnection 208.8.8.~~ -Port 3000
+Test-NetConnection 208.8.8.200 -Port 3000
 netsh interface portproxy show all
+```
+
+If both connection tests succeed and the forwarding table already points to the current WSL address, do not change anything.
+
+If `localhost:3000` succeeds but `208.8.8.200:3000` fails, get the current WSL addresses:
+
+```powershell
+wsl -d Ubuntu hostname -I
+```
+
+The original lab returned two addresses:
+
+```text
+172.18.107.91 172.17.0.1
+```
+
+Use the WSL address, `172.18.107.91` in that example. Do not use `172.17.0.1`; that is Docker's bridge address. Replace `<WSL-IP>` below with the current WSL address.
+
+**Run on: WINDOWS SERVER VM → POWERSHELL (ADMIN)**
+
+```powershell
+netsh interface portproxy delete v4tov4 listenaddress=208.8.8.200 listenport=3000
+netsh interface portproxy add v4tov4 listenaddress=208.8.8.200 listenport=3000 connectaddress=<WSL-IP> connectport=3000
+netsh interface portproxy show all
+```
+
+Check for the existing firewall rule:
+
+```powershell
+Get-NetFirewallRule -DisplayName "Semaphore 3000" -ErrorAction SilentlyContinue
+```
+
+Create it only if the preceding command returns nothing:
+
+```powershell
+New-NetFirewallRule -DisplayName "Semaphore 3000" -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow
+```
+
+Retest:
+
+```powershell
+Test-NetConnection 208.8.8.200 -Port 3000
 ```
 
 **Open on: PHYSICAL PC → WEB BROWSER**
 
 ```text
-http://208.8.8.~~:3000
+http://208.8.8.200:3000
 ```
 
 If the existing GUI works, leave its container, database, users, projects, credentials, and port configuration unchanged.
+
+The WSL address can change after WSL or the VM restarts. If `localhost:3000` still works but the VM address stops working, repeat only the WSL-address and port-proxy checks above.
 
 ## 7. What This Tutorial Changes
 

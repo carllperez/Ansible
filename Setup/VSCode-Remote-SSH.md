@@ -18,7 +18,7 @@ The Windows VM folder is the source of truth. Do not recreate the same files wit
 
 ~~~text
 PHYSICAL PC — VS Code
-  → Remote-SSH to 208.8.8.~~
+  → Remote-SSH to 208.8.8.200
   → edit/save YAML on the Windows Server VM
   → C:\Users\Administrator\ansible-lab
   → WSL view: /mnt/c/Users/Administrator/ansible-lab
@@ -33,17 +33,17 @@ Install Microsoft's **Remote - SSH** extension on the physical PC.
 **Run on: PHYSICAL PC → POWERSHELL or CMD**
 
 ~~~powershell
-ssh Administrator@208.8.8.~~
+ssh Administrator@208.8.8.200
 ~~~
 
 In VS Code:
 
 ~~~text
 Remote-SSH: Connect to Host
-ssh Administrator@208.8.8.~~
+ssh Administrator@208.8.8.200
 ~~~
 
-The lower-left status area should show SSH: 208.8.8.~~.
+The lower-left status area should show SSH: 208.8.8.200.
 
 <!-- SCREENSHOT: VS Code showing the Remote-SSH connection to the Windows Server VM -->
 

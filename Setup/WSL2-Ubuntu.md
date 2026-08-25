@@ -1,14 +1,38 @@
 # WSL2 and Ubuntu Setup
 
-Ubuntu on WSL2 provides the Linux environment for Docker, Ansible, and Semaphore. In this lab WSL2 runs inside a Windows Server VMware VM, so nested virtualization must be enabled.
+Ubuntu on WSL2 provides the Linux environment for Docker, Ansible, and Semaphore. In this lab WSL2 runs inside a Windows Server 2022 VMware VM, so VMware must expose nested virtualization to the VM.
+
+This guide includes both the short installation path and the manual Windows Server 2022 path used in the original lab.
+
+> **Existing working system:** Run the verification step first. If Ubuntu already reports `VERSION 2`, do not reinstall WSL or Ubuntu.
 
 ## Command Location Labels
 
 - **PHYSICAL PC** — the computer in front of you.
 - **WINDOWS SERVER VM — POWERSHELL (ADMIN)** — PowerShell inside the VM, opened as Administrator.
+- **WINDOWS SERVER VM → WEB BROWSER** — a browser opened inside the VM for an official Microsoft download.
 - **VM → WSL UBUNTU** — the Ubuntu terminal opened with `wsl -d Ubuntu`.
 
-## 1. Enable Nested Virtualization
+## 1. Verify Before Installing
+
+**Run on: WINDOWS SERVER VM → POWERSHELL (ADMIN)**
+
+```powershell
+wsl -l -v
+```
+
+If the result already shows Ubuntu on version 2, skip to [Update Ubuntu](#8-update-ubuntu):
+
+```text
+NAME      STATE      VERSION
+Ubuntu    Stopped    2
+```
+
+If Ubuntu appears as version 1, do not download it again. Continue through the prerequisite and conversion sections.
+
+If no distribution is installed, continue through the complete guide.
+
+## 2. Enable Nested Virtualization
 
 **Do on: PHYSICAL PC → VMware Workstation, while the Windows Server VM is powered off**
 
@@ -19,18 +43,28 @@ VM Settings
 → Enable “Virtualize Intel VT-x/EPT or AMD-V/RVI”
 ```
 
-Start the Windows Server VM.
+The CPU performance-counter and IOMMU options are not required for this lab. Start the Windows Server VM after enabling the virtualization-engine option.
 
-## 2. Install WSL
+Verify that Windows Server detects the hypervisor:
 
-**Run on: WINDOWS SERVER VM — POWERSHELL (ADMIN)**
+**Run on: WINDOWS SERVER VM → POWERSHELL (ADMIN)**
 
 ```powershell
-wsl --version
-wsl --install
+systeminfo | findstr /i "Hyper-V"
 ```
 
-If Windows Server requires manual feature enablement:
+The original lab eventually reported that a hypervisor had been detected. If WSL reports `HCS_E_HYPERV_NOT_INSTALLED`, power off the VM and correct this VMware setting before reinstalling anything.
+
+## 3. Enable the Windows Features
+
+**Run on: WINDOWS SERVER VM → POWERSHELL (ADMIN)**
+
+```powershell
+Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux
+Get-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform
+```
+
+Enable a feature only if it is disabled:
 
 ```powershell
 dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
@@ -38,45 +72,108 @@ dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /nores
 Restart-Computer
 ```
 
-After the VM restarts:
+On the original Windows Server 2022 build, the automatic installer initially reported `0x800f080c` and did not handle `VirtualMachinePlatform` correctly. If that happens, install the pending Windows Server cumulative updates, restart the VM, and repeat the feature checks. Do not repeatedly reinstall Ubuntu.
+
+The original inbox WSL executable was version `10.0.20348.1`. You can check it with:
 
 ```powershell
-wsl --set-default-version 2
+(Get-Item C:\Windows\System32\wsl.exe).VersionInfo | Select FileVersion, ProductVersion
 ```
 
-## 3. Install Ubuntu
+## 4. Install the WSL2 Kernel When Required
 
-**Run on: WINDOWS SERVER VM — POWERSHELL (ADMIN)**
+Check WSL status:
 
 ```powershell
-wsl --install -d Ubuntu
+wsl --status
+```
+
+If Windows reports that the WSL2 kernel is missing, use Microsoft's official kernel package:
+
+```text
+https://aka.ms/wsl2kernel
+```
+
+**Do on: WINDOWS SERVER VM → WEB BROWSER**
+
+Download and run `wsl_update_x64.msi`, then return to Administrator PowerShell. The original lab reported kernel version `5.10.16` after this installation.
+
+## 5. Try the Short Ubuntu Installation Path
+
+**Run on: WINDOWS SERVER VM → POWERSHELL (ADMIN)**
+
+```powershell
+wsl --list --online
+wsl --install -d Ubuntu-20.04
+```
+
+If Ubuntu installs, launch it and create the requested Linux username and password. The original lab used `ubadmin`.
+
+If the install command fails while downloading or installing Ubuntu, use the manual procedure below.
+
+## 6. Manual Ubuntu 20.04 Installation Used in the Lab
+
+**Run on: WINDOWS SERVER VM → POWERSHELL (ADMIN)**
+
+```powershell
+New-Item -ItemType Directory -Path C:\Users\Administrator\WSL -Force
+Set-Location C:\Users\Administrator\WSL
+Invoke-WebRequest -Uri https://aka.ms/wslubuntu2004 -OutFile Ubuntu.appx -UseBasicParsing
+Get-Item .\Ubuntu.appx | Select Name, Length
+Add-AppxPackage .\Ubuntu.appx
+```
+
+The original download was `937,972,031` bytes. `Invoke-WebRequest` can be slow. For a new download, this faster alternative can be used instead of `Invoke-WebRequest`:
+
+```powershell
+curl.exe -L "https://aka.ms/wslubuntu2004" -o Ubuntu.appx
+```
+
+Do not run both download commands, and do not cancel a nearly complete download just to switch methods.
+
+Launch the installed distribution:
+
+```powershell
+ubuntu2004
+```
+
+If that command is unavailable, try:
+
+```powershell
+ubuntu
+```
+
+Create the requested Linux username and password. A manually installed distribution can initially appear as WSL 1; convert it in the next section before installing Docker.
+
+## 7. Convert and Verify Ubuntu as WSL2
+
+**Run on: WINDOWS SERVER VM → POWERSHELL (ADMIN)**
+
+```powershell
+wsl -l -v
+wsl --shutdown
+wsl --set-version Ubuntu 2
 wsl -l -v
 ```
 
-Expected:
+Expected final result:
 
 ```text
 NAME      STATE      VERSION
 Ubuntu    Stopped    2
 ```
 
-If Ubuntu is version 1:
+`wsl --set-default-version 2` controls future installations; `wsl --set-version Ubuntu 2` converts the existing Ubuntu installation.
 
-```powershell
-wsl --set-version Ubuntu 2
-```
+In the original lab, the old `wsl.exe` displayed its help page instead of performing the conversion. The successful fix was to install the pending Windows Server cumulative update, restart the VM, confirm nested virtualization and both Windows features, and then retry `wsl --set-version Ubuntu 2`—without reinstalling Ubuntu.
 
-Open Ubuntu and create the requested Linux username/password:
+Open Ubuntu:
 
 ```powershell
 wsl -d Ubuntu
 ```
 
-The original lab used the Ubuntu username `ubadmin`.
-
-<!-- SCREENSHOT: wsl -l -v showing Ubuntu version 2 -->
-
-## 4. Update Ubuntu
+## 8. Update Ubuntu
 
 **Run on: VM → WSL UBUNTU**
 
@@ -85,4 +182,4 @@ sudo apt update
 sudo apt upgrade -y
 ```
 
-If WSL reports `HCS_E_HYPERV_NOT_INSTALLED`, return to step 1 and enable nested virtualization before reinstalling anything.
+At this point Ubuntu is ready for the existing Docker, Ansible, and Semaphore verification guide.
