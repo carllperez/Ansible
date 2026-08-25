@@ -1,0 +1,30 @@
+---
+- name: Read-only test for reusable CORE TAAS targets
+  hosts: "{{ target_device | default('NO_TARGET_SELECTED') }}"
+  gather_facts: false
+  serial: 1
+  any_errors_fatal: true
+
+  pre_tasks:
+    - name: Validate TAAS monitor and management address
+      assert:
+        that:
+          - inventory_hostname == target_device
+          - "'taas' in group_names"
+          - monitor is defined
+          - (monitor | int) >= 1
+          - (monitor | int) <= 254
+          - (monitor | string) == ((monitor | int) | string)
+          - (ansible_host | string) == ('10.' ~ (monitor | string) ~ '.1.2')
+        fail_msg: "TAAS inventory safety check failed for {{ inventory_hostname }}."
+
+  tasks:
+    - name: Run show version
+      ios_command:
+        commands:
+          - show version
+      register: output
+
+    - name: Display output
+      debug:
+        var: output.stdout_lines

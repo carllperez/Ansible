@@ -1,0 +1,43 @@
+---
+- name: Configure reusable CORE TAAS LACP EtherChannel
+  hosts: "{{ target_device | default('NO_TARGET_SELECTED') }}"
+  gather_facts: false
+  serial: 1
+  any_errors_fatal: true
+
+  pre_tasks:
+    - name: Validate TAAS monitor and management address
+      assert:
+        that:
+          - inventory_hostname == target_device
+          - "'taas' in group_names"
+          - monitor is defined
+          - (monitor | int) >= 1
+          - (monitor | int) <= 254
+          - (monitor | string) == ((monitor | int) | string)
+          - (ansible_host | string) == ('10.' ~ (monitor | string) ~ '.1.2')
+        fail_msg: "TAAS inventory safety check failed for {{ inventory_hostname }}."
+
+  tasks:
+    - name: Configure LACP EtherChannel
+      ios_config:
+        parents:
+          - interface range FastEthernet0/10 - 12
+        lines:
+          - channel-group 1 mode active
+          - channel-protocol lacp
+
+    - name: Verify EtherChannel and Port-Channel bandwidth
+      ios_command:
+        commands:
+          - show etherchannel summary
+          - show interfaces port-channel 1 | include BW
+      register: lacp_verification
+
+    - name: Display LACP verification
+      debug:
+        var: lacp_verification.stdout_lines
+
+    - name: Save configuration
+      ios_config:
+        save_when: modified
