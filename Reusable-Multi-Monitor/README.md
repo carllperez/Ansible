@@ -1,0 +1,137 @@
+# Reusable Multi-Monitor Deployment
+
+This directory provides the safe variable-based version of the Day 1 CORE BABA and CORE TAAS playbooks. The original `CORE-BABA/` and `CORE-TAAS/` files keep the requested `~~` documentation placeholder; these reusable files use `{{ monitor }}` so one playbook can support monitor 71, 72, 73, and other assigned numbers.
+
+## Safety Design
+
+Every configuration playbook:
+
+- refuses to select any host unless `target_device` is supplied explicitly;
+- confirms the selected host belongs to the correct `baba` or `taas` inventory group;
+- reads `monitor` from the target host's inventory entry;
+- confirms the value is an integer from 1 through 254;
+- confirms the management address matches the device type and monitor number;
+- uses `serial: 1` so switches are changed one at a time;
+- stops the play on the first failed host;
+- never accepts a runtime monitor number that could disagree with inventory.
+
+Select one inventory hostname with both `--extra-vars target_device=baba72` and `--limit baba72`. The explicit target chooses the host; the limit is an additional guardrail.
+
+## 1. Prerequisites
+
+The target switch must already have its management address and SSH bootstrap. For BABA 72, Ansible must be able to reach `10.72.1.4`; for TAAS 72, it must reach `10.72.1.2`.
+
+**Run on: VS Code TERMINAL → VM → WSL UBUNTU**
+
+```bash
+ping -c 4 10.72.1.4
+ssh admin@10.72.1.4
+```
+
+If the switch is factory-default or its management address is changing, use the Cisco console first. Do not use a full base playbook to change the address carrying the active Ansible session.
+
+## 2. Create the Multi-Monitor Inventory in VS Code
+
+**Do in: PHYSICAL PC → VS Code Remote-SSH window → Windows Server VM folder**
+
+Create this folder structure:
+
+```text
+C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\
+├── inventory.ini
+├── CORE-BABA\
+└── CORE-TAAS\
+```
+
+Copy `Reusable-Multi-Monitor/inventory.example.ini` into the VS Code file `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\inventory.ini`. Keep only real devices. Each inventory hostname must be unique, and each `monitor` must agree with its management address:
+
+```ini
+[baba]
+baba72 ansible_host=10.72.1.4 monitor=72
+
+[taas]
+taas72 ansible_host=10.72.1.2 monitor=72
+```
+
+Do not put TAAS under `[baba]` or BABA under `[taas]`.
+
+## 3. Save the Reusable YAML Files through VS Code
+
+Copy each repository YAML to the matching path in the VS Code Remote-SSH VM folder:
+
+| Repository file | VS Code path on Windows Server VM |
+|---|---|
+| `Reusable-Multi-Monitor/CORE-BABA/show-version.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-BABA\show-version.yml` |
+| `Reusable-Multi-Monitor/CORE-BABA/baba-base.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-BABA\baba-base.yml` |
+| `Reusable-Multi-Monitor/CORE-BABA/baba-lacp.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-BABA\baba-lacp.yml` |
+| `Reusable-Multi-Monitor/CORE-BABA/baba-dhcp.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-BABA\baba-dhcp.yml` |
+| `Reusable-Multi-Monitor/CORE-BABA/baba-vlans.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-BABA\baba-vlans.yml` |
+| `Reusable-Multi-Monitor/CORE-BABA/baba-camera-dhcp.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-BABA\baba-camera-dhcp.yml` |
+| `Reusable-Multi-Monitor/CORE-TAAS/show-version.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-TAAS\show-version.yml` |
+| `Reusable-Multi-Monitor/CORE-TAAS/taas-base.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-TAAS\taas-base.yml` |
+| `Reusable-Multi-Monitor/CORE-TAAS/taas-trunk.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-TAAS\taas-trunk.yml` |
+| `Reusable-Multi-Monitor/CORE-TAAS/taas-lacp.yml` | `C:\Users\Administrator\ansible-lab\Reusable-Multi-Monitor\CORE-TAAS\taas-lacp.yml` |
+
+Do not replace `{{ monitor }}`. Ansible resolves it separately for every inventory host.
+
+## 4. Copy to the Existing Semaphore Container
+
+**Run on: VS Code TERMINAL → VM → WSL UBUNTU**
+
+```bash
+sudo docker exec -u 0 semaphore mkdir -p /ansible/reusable/CORE-BABA
+sudo docker exec -u 0 semaphore mkdir -p /ansible/reusable/CORE-TAAS
+
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/Reusable-Multi-Monitor/inventory.ini semaphore:/ansible/reusable/inventory.ini
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/Reusable-Multi-Monitor/CORE-BABA/. semaphore:/ansible/reusable/CORE-BABA/
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/Reusable-Multi-Monitor/CORE-TAAS/. semaphore:/ansible/reusable/CORE-TAAS/
+```
+
+This does not rebuild or migrate Semaphore.
+
+## 5. Syntax and Read-Only Tests
+
+**Run on: VS Code TERMINAL → VM → WSL UBUNTU**
+
+```bash
+sudo docker exec semaphore ansible-playbook -i /ansible/reusable/inventory.ini /ansible/reusable/CORE-BABA/show-version.yml --syntax-check
+sudo docker exec semaphore ansible-playbook -i /ansible/reusable/inventory.ini /ansible/reusable/CORE-BABA/show-version.yml --extra-vars target_device=baba72 --limit baba72
+```
+
+The read-only test must finish with `failed=0` and `unreachable=0`.
+
+## 6. Semaphore Templates
+
+Reuse the existing project and repository. Create separate templates per device and set the template's Ansible command arguments to the explicit target and matching limit:
+
+```text
+--extra-vars target_device=baba72 --limit baba72
+```
+
+Example BABA 72 templates:
+
+| Template | Playbook | Required target/limit |
+|---|---|---|
+| BABA 72 — Show Version | `reusable/CORE-BABA/show-version.yml` | `target_device=baba72`, limit `baba72` |
+| BABA 72 — Base | `reusable/CORE-BABA/baba-base.yml` | `target_device=baba72`, limit `baba72` |
+| BABA 72 — Trunk/LACP | `reusable/CORE-BABA/baba-lacp.yml` | `target_device=baba72`, limit `baba72` |
+| BABA 72 — DHCP | `reusable/CORE-BABA/baba-dhcp.yml` | `target_device=baba72`, limit `baba72` |
+| BABA 72 — VLANs | `reusable/CORE-BABA/baba-vlans.yml` | `target_device=baba72`, limit `baba72` |
+
+Use `/ansible/reusable/inventory.ini` as the inventory. If the working Semaphore version does not expose an arguments, extra-variables, or limit field, use the documented CLI commands for this reusable set; do not remove the explicit-target safeguard.
+
+## 7. Safe CLI Example for BABA 72
+
+**Run on: VS Code TERMINAL → VM → WSL UBUNTU**
+
+```bash
+sudo docker exec semaphore ansible-playbook -i /ansible/reusable/inventory.ini /ansible/reusable/CORE-BABA/show-version.yml --extra-vars target_device=baba72 --limit baba72
+sudo docker exec semaphore ansible-playbook -i /ansible/reusable/inventory.ini /ansible/reusable/CORE-BABA/baba-base.yml --extra-vars target_device=baba72 --limit baba72 --check
+sudo docker exec semaphore ansible-playbook -i /ansible/reusable/inventory.ini /ansible/reusable/CORE-BABA/baba-base.yml --extra-vars target_device=baba72 --limit baba72
+```
+
+Review check-mode output before the real configuration run. Network modules and IOS versions can differ in check-mode behavior, so it is an additional safeguard rather than a substitute for backups and verification.
+
+## Camera Reservations
+
+The reusable camera playbook will stop unless both real client identifiers exist, differ from one another, and no longer contain the original placeholder. Do not create a camera Semaphore template until those values are known and reviewed.
