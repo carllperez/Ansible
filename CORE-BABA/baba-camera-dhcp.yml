@@ -1,0 +1,33 @@
+---
+# DO NOT RUN UNTIL THE REAL CAMERA CLIENT IDENTIFIERS ARE KNOWN.
+# DAY1-May5-SirRob.txt uses 001a.xxxx.yyyy as placeholders.
+
+- name: Configure CORE BABA Camera DHCP Reservations
+  hosts: cisco
+  gather_facts: no
+
+  tasks:
+    - name: Enable IP routing
+      ios_config:
+        lines:
+          - ip routing
+
+    - name: Configure CAMERA6 DHCP reservation
+      ios_config:
+        parents:
+          - ip dhcp pool CAMERA6
+        lines:
+          - host 10.~~.50.6 255.255.255.0
+          - client-identifier 001a.xxxx.yyyy
+
+    - name: Configure CAMERA8 DHCP reservation
+      ios_config:
+        parents:
+          - ip dhcp pool CAMERA8
+        lines:
+          - host 10.~~.50.8 255.255.255.0
+          - client-identifier 001a.xxxx.yyyy
+
+    - name: Save configuration
+      ios_config:
+        save_when: modified
