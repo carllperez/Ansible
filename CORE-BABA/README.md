@@ -16,62 +16,54 @@ This tutorial recreates the CORE BABA work from the original lab and keeps every
 
 Replace every `~~` with the assigned monitor number in the working copies, not in this reusable template repository.
 
-## Files and Exact Paste Locations
+## Files and Exact VS Code Locations
 
-From the VS Code terminal, enter WSL Ubuntu and work under `~/ansible-lab`. Create each file with Nano, copy all YAML from the matching repository file, paste it into the Ubuntu file, and save.
+Use VS Code Remote-SSH on the physical PC to open `C:\Users\Administrator\ansible-lab` on the Windows Server VM. Create and save the working files there; do not recreate them with Nano in Ubuntu.
 
-| Copy YAML from | Paste/save inside Ubuntu as | Purpose |
+| Copy YAML from | Save through VS Code on the VM as | Purpose |
 |---|---|---|
-| `CORE-BABA/show-version.yml` | `~/ansible-lab/show-version-baba.yml` | Read-only SSH/Ansible test |
-| `CORE-BABA/baba-base.yml` | `~/ansible-lab/baba-base.yml` | Base and SVI configuration |
-| `CORE-BABA/baba-lacp.yml` | `~/ansible-lab/baba-lacp.yml` | Fa0/10-12 trunk and LACP |
-| `CORE-BABA/baba-dhcp.yml` | `~/ansible-lab/baba-dhcp.yml` | DHCP pools and exclusions |
-| `CORE-BABA/baba-vlans.yml` | `~/ansible-lab/baba-vlans.yml` | VLANs and access/voice ports |
-| `CORE-BABA/baba-camera-dhcp.yml` | `~/ansible-lab/baba-camera-dhcp.yml` | Camera reservations; do not run yet |
+| `CORE-BABA/show-version.yml` | `C:\Users\Administrator\ansible-lab\show-version-baba.yml` | Read-only SSH/Ansible test |
+| `CORE-BABA/baba-base.yml` | `C:\Users\Administrator\ansible-lab\baba-base.yml` | Base and SVI configuration |
+| `CORE-BABA/baba-lacp.yml` | `C:\Users\Administrator\ansible-lab\baba-lacp.yml` | Fa0/10-12 trunk and LACP |
+| `CORE-BABA/baba-dhcp.yml` | `C:\Users\Administrator\ansible-lab\baba-dhcp.yml` | DHCP pools and exclusions |
+| `CORE-BABA/baba-vlans.yml` | `C:\Users\Administrator\ansible-lab\baba-vlans.yml` | VLANs and access/voice ports |
+| `CORE-BABA/baba-camera-dhcp.yml` | `C:\Users\Administrator\ansible-lab\baba-camera-dhcp.yml` | Camera reservations; do not run yet |
 
 All BABA YAML files use `hosts: baba`. This is intentional. Do not change them to `hosts: cisco`, because the combined group also contains TAAS.
 
 The Day 1 YAML keeps Sir Rob's VTY `password pass` and `login` commands. SSH setup is documented separately as the prerequisite that makes Ansible access possible; the playbook does not remove an existing `transport input ssh` command.
 
-## Create and Paste the BABA YAML in Ubuntu
+## Create and Save the BABA YAML through VS Code
 
-**Run on: WINDOWS SERVER VM → POWERSHELL or VS Code terminal**
+**Do in: PHYSICAL PC → VS Code Remote-SSH window → Windows Server VM folder**
+
+1. Open `C:\Users\Administrator\ansible-lab`.
+2. Create the filenames from the table above.
+3. Copy the complete matching repository YAML into each file.
+4. Replace every `~~` with the assigned monitor number in the working copy.
+5. Save with **Ctrl+S**. VS Code transfers the saved file over SSH to the VM.
+
+Open the VS Code terminal and enter Ubuntu only for verification and Docker commands:
 
 ```powershell
 wsl -d Ubuntu
 ```
 
-**Then run on: VS Code TERMINAL → VM → WSL UBUNTU**
-
-```bash
-mkdir -p ~/ansible-lab
-cd ~/ansible-lab
-
-nano show-version-baba.yml
-nano baba-base.yml
-nano baba-lacp.yml
-nano baba-dhcp.yml
-nano baba-vlans.yml
-nano baba-camera-dhcp.yml
-```
-
-Open one file at a time. Copy the complete contents of the matching repository YAML from the table above and paste it into Nano. Replace every `~~` with the assigned monitor number in the Ubuntu copy. Save with **Ctrl+O**, press **Enter**, then exit with **Ctrl+X**.
-
 Before copying files to Semaphore, check that no monitor placeholders remain:
 
 ```bash
 grep -n -- '~~' \
-  ~/ansible-lab/show-version-baba.yml \
-  ~/ansible-lab/baba-base.yml \
-  ~/ansible-lab/baba-lacp.yml \
-  ~/ansible-lab/baba-dhcp.yml \
-  ~/ansible-lab/baba-vlans.yml \
-  ~/ansible-lab/baba-camera-dhcp.yml
+  /mnt/c/Users/Administrator/ansible-lab/show-version-baba.yml \
+  /mnt/c/Users/Administrator/ansible-lab/baba-base.yml \
+  /mnt/c/Users/Administrator/ansible-lab/baba-lacp.yml \
+  /mnt/c/Users/Administrator/ansible-lab/baba-dhcp.yml \
+  /mnt/c/Users/Administrator/ansible-lab/baba-vlans.yml \
+  /mnt/c/Users/Administrator/ansible-lab/baba-camera-dhcp.yml
 ```
 
 The command should return no lines. The camera client identifiers are different placeholders and must remain blocked until the real values are known.
 
-<!-- SCREENSHOT: BABA YAML files saved under ~/ansible-lab in Ubuntu -->
+<!-- SCREENSHOT: BABA YAML files open in the VS Code Remote-SSH VM folder -->
 
 ## 1. Back Up and Bootstrap BABA
 
@@ -123,17 +115,12 @@ show running-config | include hostname
 
 ## 2. Add BABA to the Inventory
 
-**Run on: VS Code TERMINAL → VM → WSL UBUNTU**
+**Do in: PHYSICAL PC → VS Code Remote-SSH window**
 
-```bash
-cd ~/ansible-lab
-nano inventory.ini
-```
-
-Copy the complete repository `inventory.example.ini` into this working file:
+Create `C:\Users\Administrator\ansible-lab\inventory.ini` and copy the complete repository `inventory.example.ini` into it.
 
 ```text
-~/ansible-lab/inventory.ini
+C:\Users\Administrator\ansible-lab\inventory.ini
 ```
 
 Replace every `~~`. The relevant entry must resolve to:
@@ -158,13 +145,13 @@ wsl -d Ubuntu
 **Then run on: VS Code TERMINAL → VM → WSL UBUNTU**
 
 ```bash
-sudo docker cp ~/ansible-lab/inventory.ini semaphore:/ansible/inventory.ini
-sudo docker cp ~/ansible-lab/show-version-baba.yml semaphore:/ansible/show-version-baba.yml
-sudo docker cp ~/ansible-lab/baba-base.yml semaphore:/ansible/baba-base.yml
-sudo docker cp ~/ansible-lab/baba-lacp.yml semaphore:/ansible/baba-lacp.yml
-sudo docker cp ~/ansible-lab/baba-dhcp.yml semaphore:/ansible/baba-dhcp.yml
-sudo docker cp ~/ansible-lab/baba-vlans.yml semaphore:/ansible/baba-vlans.yml
-sudo docker cp ~/ansible-lab/baba-camera-dhcp.yml semaphore:/ansible/baba-camera-dhcp.yml
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/inventory.ini semaphore:/ansible/inventory.ini
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/show-version-baba.yml semaphore:/ansible/show-version-baba.yml
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/baba-base.yml semaphore:/ansible/baba-base.yml
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/baba-lacp.yml semaphore:/ansible/baba-lacp.yml
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/baba-dhcp.yml semaphore:/ansible/baba-dhcp.yml
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/baba-vlans.yml semaphore:/ansible/baba-vlans.yml
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/baba-camera-dhcp.yml semaphore:/ansible/baba-camera-dhcp.yml
 sudo docker exec semaphore ls -lh /ansible
 ```
 
