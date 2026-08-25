@@ -1,0 +1,72 @@
+---
+- name: Configure CORE TAAS base Layer 3
+  hosts: taas
+  gather_facts: false
+
+  tasks:
+    - name: Configure CORE TAAS base settings
+      ios_config:
+        lines:
+          - hostname COREtaas-~~
+          - enable secret pass
+          - service password-encryption
+          - no logging console
+          - no ip domain-lookup
+
+    - name: Configure console
+      ios_config:
+        parents:
+          - line console 0
+        lines:
+          - password pass
+          - login
+          - exec-timeout 0 0
+
+    - name: Configure VTY
+      ios_config:
+        parents:
+          - line vty 0 14
+        lines:
+          - password pass
+          - login
+          - exec-timeout 0 0
+
+    - name: Configure VLAN 1 management SVI
+      ios_config:
+        parents:
+          - interface Vlan1
+        lines:
+          - no shutdown
+          - ip address 10.~~.1.2 255.255.255.0
+          - description MGMTDATA
+
+    - name: Configure VLAN 10 SVI
+      ios_config:
+        parents:
+          - interface Vlan10
+        lines:
+          - no shutdown
+          - ip address 10.~~.10.2 255.255.255.0
+          - description WIRELESS
+
+    - name: Configure VLAN 50 SVI
+      ios_config:
+        parents:
+          - interface Vlan50
+        lines:
+          - no shutdown
+          - ip address 10.~~.50.2 255.255.255.0
+          - description IPCCTV
+
+    - name: Configure VLAN 100 SVI
+      ios_config:
+        parents:
+          - interface Vlan100
+        lines:
+          - no shutdown
+          - ip address 10.~~.100.2 255.255.255.0
+          - description VOICEVLAN
+
+    - name: Save configuration
+      ios_config:
+        save_when: modified

@@ -1,0 +1,28 @@
+---
+- name: Configure CORE TAAS trunk ports
+  hosts: taas
+  gather_facts: false
+
+  tasks:
+    - name: Configure Fa0/10-12 as trunks
+      ios_config:
+        parents:
+          - interface range FastEthernet0/10 - 12
+        lines:
+          - no shutdown
+          - switchport trunk encapsulation dot1q
+          - switchport mode trunk
+
+    - name: Verify trunks
+      ios_command:
+        commands:
+          - show interfaces trunk
+      register: trunk_verification
+
+    - name: Display trunk verification
+      debug:
+        var: trunk_verification.stdout_lines
+
+    - name: Save configuration
+      ios_config:
+        save_when: modified

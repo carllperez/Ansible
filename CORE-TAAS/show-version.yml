@@ -1,0 +1,15 @@
+---
+- name: Show CORE TAAS version
+  hosts: taas
+  gather_facts: false
+
+  tasks:
+    - name: Run show version
+      ios_command:
+        commands:
+          - show version
+      register: output
+
+    - name: Display output
+      debug:
+        var: output.stdout_lines
