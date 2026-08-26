@@ -37,6 +37,7 @@ Every configuration playbook:
 - uses `serial: 1` so switches are changed one at a time;
 - stops the play on the first failed host;
 - never accepts a runtime monitor number that could disagree with inventory.
+- preserves the working SSH access by configuring both VTY 0-4 and VTY 5-14 with `login local` and `transport input ssh` in the reusable base playbooks.
 
 Select one inventory hostname with both `--extra-vars target_device=baba72` and `--limit baba72`. The explicit target chooses the host; the limit is an additional guardrail.
 
@@ -78,6 +79,13 @@ taas72 ansible_host=10.72.1.2 monitor=72
 
 Do not put TAAS under `[baba]` or BABA under `[taas]`.
 
+### Screenshot guide: Reusable inventory target
+
+- **Capture:** VS Code showing only the relevant inventory group and one example entry, such as `baba72`.
+- **Success must show:** the inventory hostname, matching `ansible_host`, and `monitor=72` on the same line.
+- **Hide:** passwords, camera identifiers, and devices outside the tutorial example.
+- **Status:** Screenshot pending.
+
 ## 3. Save the Reusable YAML Files through VS Code
 
 Copy each repository YAML to the matching path in the VS Code Remote-SSH VM folder:
@@ -112,6 +120,8 @@ sudo docker cp /mnt/c/Users/Administrator/ansible-lab/Reusable-Multi-Monitor/COR
 
 This does not rebuild or migrate Semaphore.
 
+`/ansible/reusable/inventory.ini` is the inventory used by the reusable CLI commands below. The current Day 1 `Cisco Inventory` in Semaphore is an inline GUI inventory and does not automatically read this file. For reusable GUI templates, create a separate inline entry such as `Reusable Cisco Inventory`, select the existing `Cisco Admin` credential, and paste the same reusable inventory content into it. Do not silently replace the working Day 1 inventory. If the installed Semaphore version already supports and uses a file-type inventory, it may instead point the separate reusable entry to `/ansible/reusable/inventory.ini`.
+
 ## 5. Syntax and Read-Only Tests
 
 **Run on: VS Code TERMINAL → VM → WSL UBUNTU**
@@ -123,11 +133,18 @@ sudo docker exec semaphore ansible-playbook -i /ansible/reusable/inventory.ini /
 
 The read-only test must finish with `failed=0` and `unreachable=0`.
 
+### Screenshot guide: Reusable read-only result
+
+- **Capture:** the complete command or Semaphore task name plus the final recap.
+- **Success must show:** only the selected inventory hostname and recap values `failed=0`, `unreachable=0`.
+- **Hide:** credentials and unrelated inventory hosts.
+- **Status:** Screenshot pending.
+
 Before any configuration run, read the command from left to right and confirm that the inventory line, `target_device`, and `--limit` all identify the same physical switch.
 
 ## 6. Semaphore Templates
 
-Reuse the existing project and repository. Create separate templates per device and set the template's Ansible command arguments to the explicit target and matching limit:
+Reuse the existing project and repository. Create separate templates per device, select the separate `Reusable Cisco Inventory`, and set the template's Ansible command arguments to the explicit target and matching limit:
 
 ```text
 --extra-vars target_device=baba72 --limit baba72
@@ -143,7 +160,14 @@ Example BABA 72 templates:
 | BABA 72 — DHCP | `reusable/CORE-BABA/baba-dhcp.yml` | `target_device=baba72`, limit `baba72` |
 | BABA 72 — VLANs | `reusable/CORE-BABA/baba-vlans.yml` | `target_device=baba72`, limit `baba72` |
 
-Use `/ansible/reusable/inventory.ini` as the inventory. If the working Semaphore version does not expose an arguments, extra-variables, or limit field, use the documented CLI commands for this reusable set; do not remove the explicit-target safeguard.
+For CLI runs, use `/ansible/reusable/inventory.ini`. For GUI runs in the current inline-inventory setup, use the separate `Reusable Cisco Inventory` containing identical device entries. If the working Semaphore version does not expose an arguments, extra-variables, or limit field, use the documented CLI commands for this reusable set; do not remove the explicit-target safeguard.
+
+### Screenshot guide: Reusable Semaphore target safeguards
+
+- **Capture:** the reusable task template with its playbook and arguments fields visible.
+- **Success must show:** the same device name in `target_device=baba72` and `--limit baba72`.
+- **Hide:** credentials, tokens, and unrelated devices.
+- **Status:** Screenshot pending.
 
 ## 7. Safe CLI Example for BABA 72
 
@@ -164,6 +188,7 @@ For a beginner-safe first reusable run, stop after `show-version.yml`. Continue 
 - The target switch already has a reachable management IP and SSH.
 - The inventory entry is in the correct `[baba]` or `[taas]` group.
 - The inventory hostname, address, and `monitor` value agree.
+- The selected GUI reusable inventory matches `/ansible/reusable/inventory.ini` when running from Semaphore.
 - `target_device` and `--limit` contain the same one inventory hostname.
 - The read-only show-version run succeeds with no failed or unreachable hosts.
 - The switch configuration is backed up before a configuration playbook runs.
