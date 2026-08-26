@@ -144,6 +144,15 @@ Converted to `taas-lacp.yml`.
 
 The YAML also uses `save_when: modified` after each configuration block so a successful change is saved. That is an automation safeguard; it does not add unrelated network configuration.
 
+## Choose the TAAS Base Path Before Continuing
+
+- **Automation path (recommended for a new TAAS such as 73):** enter only the connectivity/SSH bootstrap below, add `taas73` to inventory, run `TAAS — Show Version`, and then run the correctly targeted `taas-base.yml`.
+- **Complete manual path:** if you already pasted Sir Rob's entire TAAS basic Layer 3 block with every monitor value changed to 73, correct both VTY ranges to `login local` plus `transport input ssh`, run Show Version, and **skip `TAAS — Base Layer 3`**.
+
+Do not apply the complete manual base and the base playbook as though both are required. The base playbook exists to automate and standardize the base configuration; after a complete manual application it is mainly a repetitive reconciliation and can overwrite intentional differences.
+
+Do not use an old `Configure Cisco Interface` or `interface.yml` task. It is not part of the final TAAS workflow and does not replace `taas-base.yml`.
+
 ## 1. Preserve the Existing Semaphore Setup
 
 Semaphore remains in the existing Docker container inside Ubuntu. Do not recreate its container, database, project, users, credentials, or port configuration.
@@ -416,7 +425,7 @@ Do not run configuration templates until the read-only test succeeds.
 
 ### 8.2 Base Layer 3
 
-Run `TAAS — Base Layer 3`.
+Run `TAAS — Base Layer 3` **only for the automation path after the minimum bootstrap**. If Sir Rob's complete TAAS base was already applied manually, skip this template and continue with verification and the trunk/LACP sequence.
 
 The runnable base playbook keeps local SSH authentication on both VTY ranges. Run `TAAS — Show Version` again immediately after the base playbook and stop if it reports `failed` or `unreachable`.
 
