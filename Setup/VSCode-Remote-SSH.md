@@ -104,6 +104,8 @@ C:\Users\Administrator\ansible-lab\taas-lacp.yml
 
 The repository contains two files named show-version.yml. Save the BABA file as show-version-baba.yml and the TAAS file as show-version-taas.yml in the VS Code VM folder.
 
+`interface.yml`, `baba.yml`, and a Semaphore task named `Configure Cisco Interface` are earlier tests, not required working files. Do not copy or run them as part of a new BABA or TAAS deployment. Use the documented base playbook only when the switch received the minimum connectivity/SSH bootstrap; skip it if the complete base was applied manually.
+
 `inventory.ini` in this folder is the editable file used for terminal syntax checks and manual Ansible tests. The current working Semaphore tasks use a separate inline entry named `Cisco Inventory` in the GUI. Whenever a switch group or IP address changes, update both copies so the GUI and terminal select the same devices. The Key Store supplies the GUI credential; do not paste a real production password into GitHub.
 
 For the safe multi-monitor files, preserve this subfolder structure:

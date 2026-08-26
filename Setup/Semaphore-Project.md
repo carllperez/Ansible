@@ -105,6 +105,10 @@ If Semaphore asks for a Git URL but does not accept the local path, stop and con
 
 Reuse existing working templates. Add only the missing BABA/TAAS templates, using the same repository and inventory for every template.
 
+The Base Layer 3 templates are used only when the switch received the minimum management/SSH bootstrap. If Sir Rob's complete base block was already applied manually, run the matching Show Version template, verify the switch, and skip the Base Layer 3 template. A visible Semaphore button is not an instruction that it must be run.
+
+Do not create or use a `Configure Cisco Interface` template from an old `interface.yml` test. It is not part of the final BABA/TAAS template set below.
+
 | Template name | Playbook | Safe to run? |
 |---|---|---|
 | BABA — Show Version | `show-version-baba.yml` | Yes; read-only |
