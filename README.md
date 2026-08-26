@@ -96,12 +96,27 @@ Cisco-Ansible/
 - Back up the device configuration and run the read-only `show-version.yml` test before any configuration playbook.
 - The original Day 1 files retain `~~` for exact reusable documentation. Use `Reusable-Multi-Monitor/` when managing several monitor numbers with one set of playbooks.
 
+## Choose One Base-Configuration Path
+
+Do not treat the console bootstrap and the complete Sir Rob base block as two required configurations. Choose one path for each switch:
+
+| Path | What you enter manually | Do you run `baba-base.yml` or `taas-base.yml`? |
+|---|---|---|
+| **A — Automation (recommended)** | Only the management-IP, local-user, and SSH bootstrap needed for Ansible connectivity. | **Yes.** Run Show Version first, then the matching base playbook. |
+| **B — Complete manual base** | The complete monitor-corrected Sir Rob base configuration. | **No.** Skip the base playbook, run Show Version, verify the configuration, and continue with the next applicable playbook. |
+
+Some commands in the documented bootstrap overlap harmlessly with the base playbook. That overlap makes the playbook idempotently confirm the intended state; it is not an instruction to paste Sir Rob's complete base block and then apply it again.
+
+Whichever path is used, VTY 0-4 and 5-14 must use `login local` and `transport input ssh` before Semaphore can authenticate. Sir Rob's plain `login` source lines must not replace the working SSH prerequisite.
+
+`Configure Cisco Interface`, `interface.yml`, `baba.yml`, and similarly named earlier tests are not part of either final path. Do not use them for a new BABA or TAAS deployment.
+
 ## Recommended Run Order
 
 1. Bootstrap management IP and SSH on both Cisco devices from the Cisco console.
 2. Build `inventory.ini`, replace every `~~`, and copy the same BABA/TAAS group definitions into the working Semaphore GUI inventory.
 3. Run both `show-version.yml` playbooks.
-4. Run `taas-base.yml` and `baba-base.yml`, then repeat both read-only connection tests.
+4. If using Path A, run `taas-base.yml` and `baba-base.yml`, then repeat both read-only connection tests. If the complete base was applied manually under Path B, skip the matching base playbook.
 5. Run `taas-trunk.yml`, then the BABA trunk/LACP playbook on the other side.
 6. Run `taas-lacp.yml`, then verify the bundle on both switches.
 7. Run BABA-only `baba-dhcp.yml` and `baba-vlans.yml`.

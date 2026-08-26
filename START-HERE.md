@@ -169,6 +169,17 @@ Follow the setup guides in order:
 
 The Docker/Semaphore guide documents the existing lab rather than inventing a different Semaphore database or container. If no Semaphore container exists at all, obtain the original deployment details or a reviewed deployment standard before creating one.
 
+## Choose Manual Base or Automated Base — Not Both
+
+For each BABA or TAAS switch, choose exactly one base-configuration path:
+
+1. **Recommended automation path:** enter only enough console configuration to give the switch its management IP, local `admin` user, SSH keys, and VTY `login local`; then run Show Version and the matching base playbook.
+2. **Complete manual path:** paste the complete monitor-corrected Sir Rob base block, add/correct the SSH prerequisite, run Show Version, and **skip** the matching base playbook.
+
+Running a base playbook after the complete manual base is normally repetitive because Ansible is idempotent, but it can also overwrite deliberate differences. Do not run it merely because a button exists.
+
+The old `Configure Cisco Interface`/`interface.yml` test is not a replacement for either path and is not part of the final workflow.
+
 ## Beginner Deployment Order
 
 Stop at the first failed checkpoint.
@@ -182,7 +193,7 @@ Stop at the first failed checkpoint.
 | 5 | Copy files into `semaphore:/ansible`. | Every required file exists and has a non-zero size. |
 | 6 | Run syntax checks. | Every command reports the playbook name with no syntax error. |
 | 7 | Run Show Version. | `failed=0` and `unreachable=0`. |
-| 8 | Run the base playbook. | The job succeeds and Show Version still works afterward. |
+| 8 | Path A only: run the base playbook. Path B: skip it. | The job succeeds and Show Version still works, or the complete manual base has been verified. |
 | 9 | Configure and verify trunks/LACP on both ends. | EtherChannel members show bundled rather than `D`/down. |
 | 10 | Run BABA-only DHCP and VLAN playbooks. | The expected pools, VLANs, and ports appear. |
 | 11 | Camera reservations. | Run only after two real, reviewed client identifiers are available. |

@@ -365,6 +365,17 @@ for TAAS files.
 
 This prevents BABA DHCP/VLAN configuration from being sent to TAAS.
 
+## Unsure Whether to Run the Base Playbook
+
+Ask what was configured from the Cisco console:
+
+- If only the management IP, local user, RSA keys, SSH, and VTY `login local` were configured, run Show Version and then the matching base playbook.
+- If Sir Rob's complete BABA or TAAS base block was already applied with the correct monitor values, run Show Version, verify the configuration, and **skip the matching base playbook**.
+
+The base playbook is an automated way to apply the complete base, not a mandatory second copy of a complete manual configuration. Although most tasks are idempotent, the playbook can change values that differ from its intended state.
+
+If Semaphore still shows `Configure Cisco Interface`, inspect its playbook field. A template pointing to `interface.yml`, `baba.yml`, or another old test is outside the final documented workflow. Mark it **OLD — DO NOT RUN** or remove it through your normal change-control process; do not use it for a new TAAS or BABA switch.
+
 ## Placeholder `~~` Was Not Replaced
 
 **Check on: VM → WSL UBUNTU**
