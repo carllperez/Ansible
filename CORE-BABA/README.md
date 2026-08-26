@@ -48,7 +48,16 @@ Use VS Code Remote-SSH on the physical PC to open `C:\Users\Administrator\ansibl
 
 All BABA YAML files use `hosts: baba`. This is intentional. Do not change them to `hosts: cisco`, because the combined group also contains TAAS.
 
-The Day 1 YAML keeps Sir Rob's VTY `password pass` and `login` commands. SSH setup is documented separately as the prerequisite that makes Ansible access possible; the playbook does not remove an existing `transport input ssh` command.
+Sir Rob's original VTY `password pass` and `login` commands remain visible in the Day 1 source-reference section for comparison. The runnable `baba-base.yml` deliberately preserves the working automation access instead: VTY 0-4 and VTY 5-14 use `login local` and `transport input ssh`. This small difference is an Ansible/SSH prerequisite confirmed in the live lab; plain `login` prevented Semaphore from authenticating with the local `admin` account.
+
+Day 1 source reference (comparison only; do not use this block to replace the working SSH lines):
+
+```cisco
+line vty 0 14
+ password pass
+ login
+ exec-timeout 0 0
+```
 
 ## Create and Save the BABA YAML through VS Code
 
@@ -82,7 +91,12 @@ grep -n -- '~~' \
 
 The command should return no lines. The camera client identifiers are different placeholders and must remain blocked until the real values are known.
 
-<!-- SCREENSHOT: BABA YAML files open in the VS Code Remote-SSH VM folder -->
+### Screenshot guide: BABA working files in VS Code
+
+- **Capture:** the VS Code Explorer with `C:\Users\Administrator\ansible-lab` open.
+- **Success must show:** all six BABA working YAML filenames and the Remote-SSH connection indicator.
+- **Hide:** passwords, camera identifiers, and unrelated files.
+- **Status:** Screenshot pending.
 
 ## 1. Back Up and Bootstrap BABA
 
@@ -115,7 +129,13 @@ ip domain-name rivanit.com
 crypto key generate rsa modulus 1024
 ip ssh version 2
 
-line vty 0 14
+line vty 0 4
+ login local
+ transport input ssh
+ exec-timeout 0 0
+ exit
+
+line vty 5 14
  login local
  transport input ssh
  exec-timeout 0 0
@@ -148,7 +168,12 @@ ssh admin@10.71.1.4
 
 The bootstrap checkpoint passes only when the hostname and management address are correct, `show ip ssh` reports SSH enabled, and the manual Ubuntu SSH login succeeds. Stop here if any check fails; Ansible will not repair a switch it cannot reach.
 
-<!-- SCREENSHOT: CORE BABA Vlan1 and SSH verification -->
+### Screenshot guide: BABA management and SSH bootstrap
+
+- **Capture:** the Cisco CLI results for `show ip interface brief` and `show ip ssh`.
+- **Success must show:** the correct monitor-specific Vlan1 address and SSH version 2 enabled.
+- **Hide:** password commands, secrets, RSA key material, and unrelated running configuration.
+- **Status:** Screenshot pending.
 
 ## 2. Add BABA to the Inventory
 
@@ -168,6 +193,8 @@ baba ansible_host=10.~~.1.4
 ```
 
 The full inventory also contains TAAS and shared Cisco connection variables. Keep the credentials in Semaphore's Key Store for a non-lab deployment; `pass` is retained here because it is the Day 1 lab credential.
+
+This file is the inventory copy used by terminal syntax checks and manual Ansible commands. The current working Semaphore tasks use the separate inline `Cisco Inventory` saved in the GUI. Open **Semaphore → Inventory → Cisco Inventory** and make sure it contains the same `[baba]` and `[taas]` groups and the same monitor-specific IP addresses. Updating only the file does not update the GUI. Follow [Semaphore Project Setup — Verify or Create the Inventory](../Setup/Semaphore-Project.md#2-verify-or-create-the-inventory) for the exact GUI content.
 
 ## 3. Copy BABA Files to Semaphore
 
@@ -194,7 +221,12 @@ sudo docker exec semaphore ls -lh /ansible
 
 The file sizes must be greater than zero.
 
-<!-- SCREENSHOT: All BABA YAML files in Semaphore /ansible -->
+### Screenshot guide: BABA files inside the Semaphore container
+
+- **Capture:** the final `sudo docker exec semaphore ls -lh /ansible` output.
+- **Success must show:** `inventory.ini`, all six BABA YAML files, and sizes greater than zero.
+- **Hide:** unrelated container files or credentials.
+- **Status:** Screenshot pending.
 
 ## 4. Syntax Check
 
@@ -231,6 +263,13 @@ Repository: Cisco Playbooks
 Inventory:  Cisco Inventory
 ```
 
+### Screenshot guide: BABA task templates
+
+- **Capture:** the BABA Task Templates list in Semaphore.
+- **Success must show:** the correct BABA template names; camera reservations must be clearly marked **DO NOT RUN**.
+- **Hide:** credentials and unrelated projects.
+- **Status:** Screenshot pending.
+
 ## 6. Run and Verify in Day 1 Order
 
 ### 6.1 Read-Only Connection Test
@@ -246,18 +285,28 @@ unreachable=0
 
 Do not continue until this succeeds.
 
+### Screenshot guide: BABA read-only connection test
+
+- **Capture:** the bottom of the `BABA — Show Version` Semaphore task output.
+- **Success must show:** the BABA hostname, Cisco version output, `failed=0`, and `unreachable=0`.
+- **Hide:** credentials, tokens, and unrelated task output.
+- **Status:** Screenshot pending.
+
 ### 6.2 Base Layer 3
 
 Run `BABA — Base Layer 3`.
 
-Because the source changes VTY authentication from the bootstrap's `login local` to `password pass` plus `login`, run `BABA — Show Version` again immediately after the base playbook. Stop if it reports `failed` or `unreachable`.
+The runnable base playbook keeps local SSH authentication on both VTY ranges. Run `BABA — Show Version` again immediately after the base playbook and stop if it reports `failed` or `unreachable`.
 
 **Verify on: CORE BABA → CISCO CLI**
 
 ```cisco
 show ip interface brief
 show running-config | include hostname
+show running-config | section line vty
 ```
+
+Both `line vty 0 4` and `line vty 5 14` must show `login local` and `transport input ssh`.
 
 Expected addresses include:
 
@@ -292,6 +341,13 @@ show lacp neighbor
 ```
 
 The Day1SirRob source has `! shutdown` as a comment, so this corrected playbook does not deliberately shut Fa0/10-12. It applies `no shutdown`, Dot1Q trunking, and active LACP.
+
+### Screenshot guide: BABA EtherChannel verification
+
+- **Capture:** `show etherchannel summary` and `show lacp neighbor` after both switches are configured.
+- **Success must show:** Port-channel1 and Fa0/10-12 bundled, with the expected TAAS LACP neighbor.
+- **Hide:** unrelated interface descriptions or infrastructure details.
+- **Status:** Screenshot pending.
 
 ### 6.4 DHCP
 
@@ -331,6 +387,15 @@ client-identifier 001a.xxxx.yyyy
 
 Replace them with the actual Camera 6 and Camera 8 client identifiers, have the values reviewed, copy the edited YAML into Semaphore again, syntax-check it, and only then run it.
 
+Edit only these two values in the working YAML:
+
+```yaml
+camera6_client_identifier: "REAL-CAMERA-6-ID"
+camera8_client_identifier: "REAL-CAMERA-8-ID"
+```
+
+The playbook now stops before making any change if either value still contains `xxxx` or if both values are identical. The example names above are explanatory text, not real identifiers; replace them with the approved Cisco-format values.
+
 After the reservations are applied, the playbook runs Sir Rob's `show ip dhcp binding` verification and displays the result in the Semaphore task output.
 
 ## 7. Final BABA Verification
@@ -357,6 +422,9 @@ The BABA walkthrough is complete when:
 - `BABA — Camera Reservations` has not been run unless both real identifiers were reviewed;
 - the final configuration has been saved according to your organization’s change procedure.
 
-<!-- SCREENSHOT: Successful BABA Semaphore templates -->
+### Screenshot guide: Final BABA verification
 
-<!-- SCREENSHOT: CORE BABA final verification commands -->
+- **Capture:** the final Cisco verification output, split into readable images if necessary.
+- **Success must show:** hostname, monitor-specific SVIs, Port-channel1, expected VLANs, and DHCP pools.
+- **Hide:** secrets, camera identifiers, DHCP client details that should not be public, and unrelated configuration.
+- **Status:** Screenshot pending.

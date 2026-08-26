@@ -6,6 +6,19 @@
   hosts: baba
   gather_facts: false
 
+  vars:
+    camera6_client_identifier: "001a.xxxx.yyyy"
+    camera8_client_identifier: "001a.xxxx.yyyy"
+
+  pre_tasks:
+    - name: Stop until two real camera identifiers are reviewed
+      assert:
+        that:
+          - "'xxxx' not in camera6_client_identifier"
+          - "'xxxx' not in camera8_client_identifier"
+          - camera6_client_identifier != camera8_client_identifier
+        fail_msg: "DO NOT RUN: replace both camera identifiers with real, distinct reviewed values first."
+
   tasks:
     - name: Enable IP routing
       ios_config:
@@ -18,7 +31,7 @@
           - ip dhcp pool CAMERA6
         lines:
           - host 10.~~.50.6 255.255.255.0
-          - client-identifier 001a.xxxx.yyyy
+          - "client-identifier {{ camera6_client_identifier }}"
 
     - name: Configure CAMERA8 DHCP reservation
       ios_config:
@@ -26,7 +39,7 @@
           - ip dhcp pool CAMERA8
         lines:
           - host 10.~~.50.8 255.255.255.0
-          - client-identifier 001a.xxxx.yyyy
+          - "client-identifier {{ camera8_client_identifier }}"
 
     - name: Verify DHCP bindings
       ios_command:
