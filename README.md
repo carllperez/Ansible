@@ -6,7 +6,7 @@ This repository is a complete, reproducible tutorial for the Cisco automation la
 
 Begin with [Start Here — Beginner Orientation](START-HERE.md). It explains the terminology, the five places where commands are entered, the difference between read-only and configuration tasks, and the checkpoint that must pass before each next step.
 
-The tutorials also include visible **Screenshot guide** segments beneath steps where an image would help. The images are still pending; each segment identifies what to capture, what success must show, and what sensitive information must be hidden.
+The tutorials also include visible **Screenshot guide** segments beneath steps where an image would help. Completed examples are embedded in the matching setup guides; any remaining screenshot is clearly marked pending and identifies what to capture, what success must show, and what sensitive information must be hidden.
 
 Do not start by pressing a configuration button in Semaphore. First identify the assigned monitor number, confirm the physical switches and cabling, back up the switches, and complete the read-only connection tests.
 
