@@ -98,6 +98,15 @@ The command should return no lines. The camera client identifiers are different 
 - **Hide:** passwords, camera identifiers, and unrelated files.
 - **Status:** Screenshot pending.
 
+## Choose the BABA Base Path Before Continuing
+
+- **Automation path (recommended):** perform only the connectivity/SSH bootstrap below, run `BABA — Show Version`, and then run `BABA — Base Layer 3`.
+- **Complete manual path:** if you already pasted Sir Rob's entire BABA base block with every `~~` replaced, correct both VTY ranges to `login local` plus `transport input ssh`, run Show Version, and **skip `BABA — Base Layer 3`**.
+
+Do not paste the complete base block and then run the base playbook just because both appear in the tutorial. The bootstrap below deliberately overlaps a few base settings so Ansible can connect and safely confirm them; it is not the complete BABA base workflow.
+
+Do not use an old `Configure Cisco Interface`, `interface.yml`, or `baba.yml` task for this step. Those test files are outside the final Day 1 workflow.
+
 ## 1. Back Up and Bootstrap BABA
 
 Ansible cannot configure a completely blank switch until the switch has a reachable management IP and SSH. Perform this minimum bootstrap from the console.
@@ -294,7 +303,7 @@ Do not continue until this succeeds.
 
 ### 6.2 Base Layer 3
 
-Run `BABA — Base Layer 3`.
+Run `BABA — Base Layer 3` **only for the automation path after the minimum bootstrap**. If Sir Rob's complete BABA base was already applied manually, skip this template and continue with verification/trunking.
 
 The runnable base playbook keeps local SSH authentication on both VTY ranges. Run `BABA — Show Version` again immediately after the base playbook and stop if it reports `failed` or `unreachable`.
 
