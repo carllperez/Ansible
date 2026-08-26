@@ -86,7 +86,12 @@ If it still fails:
 cat /tmp/dockerd.log
 ```
 
-<!-- SCREENSHOT: Existing semaphore container showing Up inside Ubuntu -->
+### Screenshot guide: Existing Semaphore container is running
+
+- **Capture:** the Ubuntu terminal immediately after `sudo docker ps`.
+- **Success must show:** container name `semaphore`, an `Up` status, and the published port if shown.
+- **Hide:** unrelated container names, environment values, registry credentials, or tokens.
+- **Status:** Screenshot pending.
 
 ## 3. Verify the Existing `/ansible` Directory
 
@@ -153,38 +158,29 @@ netsh interface portproxy show all
 
 If both connection tests succeed and the forwarding table already points to the current WSL address, do not change anything.
 
-If `localhost:3000` succeeds but `208.8.8.200:3000` fails, get the current WSL addresses:
+If `localhost:3000` succeeds but `208.8.8.200:3000` fails, get the current WSL address and store the first result:
 
 ```powershell
-wsl -d Ubuntu hostname -I
+$currentWslAddress = ((wsl -d Ubuntu hostname -I).Trim() -split '\s+')[0]
+$currentWslAddress
 ```
 
-The original lab returned two addresses:
-
-```text
-172.18.107.91 172.17.0.1
-```
-
-Use the WSL address, `172.18.107.91` in that example. Do not use `172.17.0.1`; that is Docker's bridge address. Replace `<WSL-IP>` below with the current WSL address.
+The value should look like `172.x.x.x`. WSL can receive a different address after WSL or the VM restarts, so never copy a previously documented address. In this lab, later addresses in the complete `hostname -I` output can include Docker's bridge address; the command above deliberately selects the first WSL address.
 
 **Run on: WINDOWS SERVER VM → POWERSHELL (ADMIN)**
 
 ```powershell
 netsh interface portproxy delete v4tov4 listenaddress=208.8.8.200 listenport=3000
-netsh interface portproxy add v4tov4 listenaddress=208.8.8.200 listenport=3000 connectaddress=<WSL-IP> connectport=3000
+netsh interface portproxy add v4tov4 listenaddress=208.8.8.200 listenport=3000 connectaddress=$currentWslAddress connectport=3000
 netsh interface portproxy show all
 ```
 
-Check for the existing firewall rule:
+Keep the existing firewall rule. The following block creates it only when it is missing:
 
 ```powershell
-Get-NetFirewallRule -DisplayName "Semaphore 3000" -ErrorAction SilentlyContinue
-```
-
-Create it only if the preceding command returns nothing:
-
-```powershell
-New-NetFirewallRule -DisplayName "Semaphore 3000" -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow
+if (-not (Get-NetFirewallRule -DisplayName "Semaphore 3000" -ErrorAction SilentlyContinue)) {
+    New-NetFirewallRule -DisplayName "Semaphore 3000" -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow
+}
 ```
 
 Retest:
@@ -202,6 +198,13 @@ http://208.8.8.200:3000
 If the existing GUI works, leave its container, database, users, projects, credentials, and port configuration unchanged.
 
 The WSL address can change after WSL or the VM restarts. If `localhost:3000` still works but the VM address stops working, repeat only the WSL-address and port-proxy checks above.
+
+### Screenshot guide: Semaphore opens from the physical PC
+
+- **Capture:** the browser with `http://208.8.8.200:3000` visible and the Semaphore project page open.
+- **Success must show:** the expected Semaphore page loads through the VM address.
+- **Hide:** passwords, saved-login prompts, tokens, and any task output containing credentials.
+- **Status:** Screenshot pending.
 
 ## Passing Checkpoint
 

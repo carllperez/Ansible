@@ -1,6 +1,6 @@
 # Semaphore Project Setup
 
-Complete this after the YAML files and `inventory.ini` exist in `/ansible`.
+Complete this after the YAML files exist in `/ansible` and the matching CLI inventory exists at `/ansible/inventory.ini`.
 
 > Preserve the existing Semaphore project. If `Cisco Admin`, `Cisco Inventory`, `Cisco Playbooks`, or an existing task template is already present and working, verify or edit that entry instead of creating a duplicate. Do not recreate the Semaphore container, database, admin account, or project.
 
@@ -11,13 +11,13 @@ Complete this after the YAML files and `inventory.ini` exist in `/ansible`.
 | Semaphore item | Purpose in this lab |
 |---|---|
 | Key Store | Holds the Cisco login credential used by Ansible. |
-| Inventory | Points to `/ansible/inventory.ini`, which lists BABA and TAAS. |
+| Inventory | Stores the BABA/TAAS device list used by Semaphore tasks. The current working lab uses inline content in `Cisco Inventory`. |
 | Repository | Points to `/ansible`, where the playbook YAML files are stored. |
 | Task Template | Combines one playbook with the inventory, repository, and credential so it can be run from the GUI. |
 
 The names below are labels inside Semaphore. They do not create new folders or Cisco devices.
 
-Before using the GUI, verify from WSL that `/ansible/inventory.ini` and the required YAML file exist inside the container. A Semaphore template cannot use a file that was saved only in VS Code and never copied into the container.
+Before using the GUI, verify from WSL that the required YAML file exists inside the container. `/ansible/inventory.ini` remains the matching inventory for terminal syntax checks and manual Ansible tests. A Semaphore template cannot use YAML that was saved only in VS Code and never copied into the container.
 
 ## 1. Verify or Create the Cisco Login Credential
 
@@ -31,7 +31,12 @@ Before using the GUI, verify from WSL that `/ansible/inventory.ini` and the requ
 
 `pass` is a lab credential retained from the Day 1 exercise. Do not reuse it on production equipment or expose a real production password in GitHub or `inventory.ini`.
 
-<!-- SCREENSHOT: Semaphore Key Store entry named Cisco Admin -->
+### Screenshot guide: Cisco credential entry
+
+- **Capture:** the Key Store list showing an entry named `Cisco Admin`.
+- **Success must show:** the key name and credential type only.
+- **Hide:** the password, secret fields, private keys, and browser password-manager prompts.
+- **Status:** Screenshot pending.
 
 ## 2. Verify or Create the Inventory
 
@@ -39,13 +44,42 @@ Before using the GUI, verify from WSL that `/ansible/inventory.ini` and the requ
 2. Edit the working inventory if it already exists; otherwise click **New Inventory**.
 3. Name: `Cisco Inventory`.
 4. User credential: `Cisco Admin`.
-5. Type: file.
-6. Inventory path: `/ansible/inventory.ini`.
-7. Save.
+5. Keep the current inventory type that displays an inline inventory editor. Depending on the Semaphore version, this can be labeled **Static**.
+6. Replace the inline content with the complete inventory below.
+7. Replace every `~~` with the assigned monitor number.
+8. Save.
+
+```ini
+[baba]
+baba ansible_host=10.~~.1.4
+
+[taas]
+taas ansible_host=10.~~.1.2
+
+[cisco:children]
+baba
+taas
+
+[cisco:vars]
+ansible_connection=network_cli
+ansible_network_os=ios
+ansible_ssh_common_args='-o KexAlgorithms=+diffie-hellman-group14-sha1 -o HostKeyAlgorithms=+ssh-rsa -o Ciphers=+aes128-cbc -o MACs=+hmac-sha1'
+```
+
+Do not add `ansible_user` or `ansible_password` to this GUI content when `Cisco Admin` is selected; the Key Store supplies them.
+
+The GUI inventory and `/ansible/inventory.ini` are separate copies in the current lab. A terminal command can succeed with the container file while a Semaphore task fails because the GUI inventory is stale. Keep the group names and addresses identical in both places.
+
+If an already-working Semaphore installation uses a **file** inventory instead of inline content, preserve that working type and point it to `/ansible/inventory.ini`. Do not switch a working inventory type merely to match a screenshot.
 
 The inventory must contain separate `baba` and `taas` groups. Never point BABA-only playbooks at the combined `cisco` group.
 
-<!-- SCREENSHOT: Cisco Inventory using /ansible/inventory.ini -->
+### Screenshot guide: Cisco Inventory
+
+- **Capture:** the saved `Cisco Inventory` details page without exposing credentials.
+- **Success must show:** separate `[baba]` and `[taas]` groups, both monitor-specific addresses, and the selected `Cisco Admin` credential.
+- **Hide:** passwords and any unrelated production inventory entries.
+- **Status:** Screenshot pending.
 
 ## 3. Verify or Create the Repository
 
@@ -60,7 +94,12 @@ Semaphore supports local filesystem repositories, so `/ansible` is used directly
 
 If Semaphore asks for a Git URL but does not accept the local path, stop and confirm that the same working Semaphore version and existing project are being used. Do not replace the local repository with an unrelated public Git repository just to make the form accept a value.
 
-<!-- SCREENSHOT: Local repository named Cisco Playbooks with /ansible path -->
+### Screenshot guide: Local playbook repository
+
+- **Capture:** the saved `Cisco Playbooks` repository details.
+- **Success must show:** the local path `/ansible` and the expected access-key selection.
+- **Hide:** unrelated repository URLs, tokens, and private access keys.
+- **Status:** Screenshot pending.
 
 ## 4. Verify or Create Task Templates
 
@@ -107,7 +146,12 @@ BABA files → hosts: baba
 TAAS files → hosts: taas
 ```
 
-<!-- SCREENSHOT: Semaphore Task Templates showing separate BABA and TAAS buttons -->
+### Screenshot guide: Separate BABA and TAAS templates
+
+- **Capture:** the Task Templates list with the BABA and TAAS names visible.
+- **Success must show:** separate Show Version, base, trunk/LACP, and BABA-only task names; the camera task must be clearly marked **DO NOT RUN**.
+- **Hide:** credentials and unrelated project names.
+- **Status:** Screenshot pending.
 
 ## 5. First Test
 
@@ -120,11 +164,19 @@ Both must finish with `failed=0` and `unreachable=0` before any configuration te
 
 If either value is non-zero, open the task output, copy the complete first error, and use `Troubleshooting.md`. Repeatedly clicking Run will not correct inventory, SSH, or file-path errors.
 
+### Screenshot guide: Successful read-only task
+
+- **Capture:** the end of a Show Version task in Semaphore.
+- **Success must show:** the task name, target hostname, Cisco version output, and recap with `failed=0` and `unreachable=0`.
+- **Hide:** credentials, session tokens, and unrelated device configuration.
+- **Status:** Screenshot pending.
+
 ## Passing Checkpoint
 
 ```text
 [ ] Cisco Admin exists once
-[ ] Cisco Inventory points to /ansible/inventory.ini
+[ ] Cisco Inventory contains separate BABA and TAAS groups
+[ ] GUI inventory addresses match /ansible/inventory.ini
 [ ] Cisco Playbooks points to /ansible
 [ ] BABA and TAAS Show Version templates use the correct filenames
 [ ] Both Show Version jobs finish with failed=0 and unreachable=0

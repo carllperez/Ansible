@@ -40,6 +40,13 @@ If Ubuntu appears as version 1, do not download it again. Continue through the p
 
 If no distribution is installed, continue through the complete guide.
 
+### Screenshot guide: Confirm Ubuntu is WSL2
+
+- **Capture:** Administrator PowerShell after `wsl -l -v` finishes.
+- **Success must show:** an Ubuntu row and `VERSION 2`.
+- **Hide:** unrelated distribution names if they reveal another project; no password should appear.
+- **Status:** Screenshot pending.
+
 ## 2. Enable Nested Virtualization
 
 **Do on: PHYSICAL PC → VMware Workstation, while the Windows Server VM is powered off**
@@ -62,6 +69,13 @@ systeminfo | findstr /i "Hyper-V"
 ```
 
 The original lab eventually reported that a hypervisor had been detected. If WSL reports `HCS_E_HYPERV_NOT_INSTALLED`, power off the VM and correct this VMware setting before reinstalling anything.
+
+### Screenshot guide: VMware nested virtualization
+
+- **Capture:** the powered-off VM’s **Processors → Virtualization Engine** settings.
+- **Success must show:** **Virtualize Intel VT-x/EPT or AMD-V/RVI** enabled.
+- **Hide:** unrelated VM names or infrastructure details not needed for this lab.
+- **Status:** Screenshot pending.
 
 ## 3. Enable the Windows Features
 
@@ -202,3 +216,10 @@ Do not continue to Docker until all of these are true:
 - an existing working Ubuntu installation was preserved instead of reinstalled.
 
 Continue with [Docker and the existing Semaphore container](Docker-Semaphore.md).
+
+### Screenshot guide: WSL passing checkpoint
+
+- **Capture:** `wsl -l -v` showing version 2 beside an open Ubuntu prompt.
+- **Success must show:** Ubuntu opens without a virtualization error.
+- **Hide:** anything typed as a Linux password; passwords do not echo and must never be staged for a screenshot.
+- **Status:** Screenshot pending.

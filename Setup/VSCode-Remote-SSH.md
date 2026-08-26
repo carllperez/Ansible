@@ -57,7 +57,12 @@ The lower-left status area should show SSH: 208.8.8.200.
 
 If the status area does not show that connection, stop. Files created in an ordinary local VS Code window will be saved on the wrong computer.
 
-<!-- SCREENSHOT: VS Code showing the Remote-SSH connection to the Windows Server VM -->
+### Screenshot guide: VS Code is connected to the VM
+
+- **Capture:** the complete VS Code window after Remote-SSH connects.
+- **Success must show:** `SSH: 208.8.8.200` in the lower-left status area.
+- **Hide:** unrelated open files, saved credentials, and personal account information.
+- **Status:** Screenshot pending.
 
 ## 2. Open the YAML Folder on the VM
 
@@ -98,6 +103,8 @@ C:\Users\Administrator\ansible-lab\taas-lacp.yml
 ~~~
 
 The repository contains two files named show-version.yml. Save the BABA file as show-version-baba.yml and the TAAS file as show-version-taas.yml in the VS Code VM folder.
+
+`inventory.ini` in this folder is the editable file used for terminal syntax checks and manual Ansible tests. The current working Semaphore tasks use a separate inline entry named `Cisco Inventory` in the GUI. Whenever a switch group or IP address changes, update both copies so the GUI and terminal select the same devices. The Key Store supplies the GUI credential; do not paste a real production password into GitHub.
 
 For the safe multi-monitor files, preserve this subfolder structure:
 
@@ -153,7 +160,12 @@ grep -R -n -- '~~' /mnt/c/Users/Administrator/ansible-lab
 
 For the original Day 1 working files, the grep command should return no unreplaced monitor placeholders. It is normal for explanatory Markdown or untouched GitHub templates to contain ~~; do not run those files as working playbooks.
 
-<!-- SCREENSHOT: WSL listing the YAML files from the Windows VM mounted path -->
+### Screenshot guide: WSL sees the files saved by VS Code
+
+- **Capture:** the VS Code terminal after `ls -lh /mnt/c/Users/Administrator/ansible-lab`.
+- **Success must show:** the expected YAML filenames and sizes greater than zero.
+- **Hide:** unrelated filenames or folders belonging to other projects.
+- **Status:** Screenshot pending.
 
 ## 6. Copy the Day 1 Files into Existing Semaphore
 
@@ -179,6 +191,8 @@ Verify the runtime copies:
 ~~~bash
 sudo docker exec semaphore ls -lh /ansible
 ~~~
+
+Copying `inventory.ini` into the container does not overwrite Semaphore's inline GUI inventory. After an inventory change, also open **Semaphore → Inventory → Cisco Inventory**, update the matching `[baba]` and `[taas]` entries, and save it. Follow [Semaphore Project Setup](Semaphore-Project.md#2-verify-or-create-the-inventory).
 
 ## 7. Copy the Reusable Multi-Monitor Files
 
@@ -212,6 +226,13 @@ sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/t
 
 Syntax checking does not configure the Cisco devices.
 
+### Screenshot guide: Successful syntax check
+
+- **Capture:** one complete `ansible-playbook ... --syntax-check` command and its result.
+- **Success must show:** the correct playbook name with no YAML or syntax error.
+- **Hide:** inventory credentials or unrelated terminal history.
+- **Status:** Screenshot pending.
+
 ## 9. Correct Update Cycle
 
 After changing a playbook:
@@ -237,5 +258,6 @@ Before opening Semaphore, confirm:
 [ ] Ctrl+S saves without an error
 [ ] WSL lists the same files under /mnt/c/Users/Administrator/ansible-lab
 [ ] The required files exist inside semaphore:/ansible with non-zero sizes
+[ ] Semaphore's Cisco Inventory has the same BABA/TAAS groups and IPs as inventory.ini
 [ ] Every syntax check succeeds
 ```
