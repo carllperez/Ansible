@@ -28,4 +28,23 @@ Semaphore
 Inventory
 <img width="1917" height="961" alt="{E5739318-7798-4054-9BFA-62FF17CC5243}" src="https://github.com/user-attachments/assets/cf38915d-80c9-49f4-9d27-8952d477e716" />
 
+<img width="1920" height="984" alt="{32921DEF-45D0-40E8-95C3-503AD52A35FD}" src="https://github.com/user-attachments/assets/96e1d753-4353-4767-9dd0-11e9861a2296" />
 
+Repository
+<img width="1917" height="913" alt="{DABB1180-59E8-452D-9B44-C73FD33C0496}" src="https://github.com/user-attachments/assets/2069f7ec-6c22-4e42-be88-a071fee0d6c0" />
+
+
+<img width="1920" height="914" alt="{6522DD80-2279-4DC3-850A-3AC4AC9C72D3}" src="https://github.com/user-attachments/assets/ba621a86-abcb-4a53-835d-ff12d2225976" />
+
+Task Template
+
+<img width="1920" height="915" alt="{5043B807-ABB7-44F6-98C3-89B4E12A160A}" src="https://github.com/user-attachments/assets/89d258b2-95fe-4913-bea6-d6297005877b" />
+
+
+Sample Show Command
+
+
+<img width="996" height="727" alt="{8348CA56-55B2-403B-8D36-0531CF3E6523}" src="https://github.com/user-attachments/assets/1e6d9b91-7579-4c25-8cb4-8aeba3fe8cab" />
+
+
+<img width="991" height="600" alt="image" src="https://github.com/user-attachments/assets/12f841d3-3250-4431-8bc1-09b214d6a61b" />
