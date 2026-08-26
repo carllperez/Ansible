@@ -43,6 +43,13 @@ Select one inventory hostname with both `--extra-vars target_device=baba72` and 
 
 ## 1. Prerequisites
 
+Choose the base path before adding a reusable target:
+
+- If the console was used only for management IP and SSH bootstrap, run the reusable base playbook after the read-only test.
+- If the complete Sir Rob base configuration was already applied manually, keep `login local` on both VTY ranges, run the read-only test, and **skip the reusable base playbook**.
+
+The reusable base playbook is the automated alternative to manually applying the complete base; it is not an additional mandatory layer. Old `Configure Cisco Interface` or `interface.yml` tests are not part of this reusable workflow.
+
 The target switch must already have its management address and SSH bootstrap. For BABA 72, Ansible must be able to reach `10.72.1.4`; for TAAS 72, it must reach `10.72.1.2`.
 
 **Run on: VS Code TERMINAL → VM → WSL UBUNTU**
@@ -170,6 +177,8 @@ For CLI runs, use `/ansible/reusable/inventory.ini`. For GUI runs in the current
 - **Status:** Screenshot pending.
 
 ## 7. Safe CLI Example for BABA 72
+
+The first Show Version command applies to both paths. Run the two base commands only when the switch received the minimum connectivity/SSH bootstrap; omit them when the complete BABA base was already configured manually.
 
 **Run on: VS Code TERMINAL → VM → WSL UBUNTU**
 
