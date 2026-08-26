@@ -21,11 +21,20 @@ Never publish inventory passwords, private keys, full device configurations, or 
 | Semaphore page will not load | Semaphore container and port 3000 sections |
 | Manual Cisco SSH fails | Cisco SSH and legacy algorithm sections |
 | `syntax-check` fails | Missing file, empty file, placeholder, and YAML line named in the error |
+| `Could not match supplied host pattern` | Semaphore's selected GUI inventory and the YAML `hosts:` value |
 | Ansible reports `unreachable` | Inventory address, network reachability, credentials, and SSH |
 | Ansible reports `failed` after connecting | First failed task and Cisco IOS message in the output |
 | EtherChannel stays down | LACP section; inspect both switches |
 
 Do not run a configuration playbook merely to test connectivity. Use the matching `show-version` playbook.
+
+## Screenshot guide: Recording a failure for help
+
+- **Capture:** the task name, target hostname, first failed task, complete first error, and final Ansible recap.
+- **Also record in text:** the command location and the last checkpoint that passed; screenshots are not searchable enough by themselves.
+- **Hide:** passwords, private keys, camera identifiers, tokens, cookies, and unrelated device configuration.
+- **Do not hide:** the relevant filename, task name, hostname, management IP, error type, and recap values needed to diagnose the failure.
+- **Status:** Screenshot pending.
 
 ## WSL2: `HCS_E_HYPERV_NOT_INSTALLED`
 
@@ -104,9 +113,21 @@ netsh interface portproxy show all
 If the WSL IP changed, replace the old proxy:
 
 ```powershell
+$currentWslAddress = ((wsl -d Ubuntu hostname -I).Trim() -split '\s+')[0]
+$currentWslAddress
 netsh interface portproxy delete v4tov4 listenaddress=208.8.8.200 listenport=3000
-netsh interface portproxy add v4tov4 listenaddress=208.8.8.200 listenport=3000 connectaddress=<NEW-WSL-IP> connectport=3000
-New-NetFirewallRule -DisplayName "Semaphore 3000" -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow
+netsh interface portproxy add v4tov4 listenaddress=208.8.8.200 listenport=3000 connectaddress=$currentWslAddress connectport=3000
+netsh interface portproxy show all
+```
+
+The first address returned by `hostname -I` is the WSL address in this lab. Do not copy an old `172.x.x.x` example: WSL can receive a new address after a restart.
+
+Check the firewall rule and create it only if it does not already exist:
+
+```powershell
+if (-not (Get-NetFirewallRule -DisplayName "Semaphore 3000" -ErrorAction SilentlyContinue)) {
+    New-NetFirewallRule -DisplayName "Semaphore 3000" -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow
+}
 ```
 
 Then open on the physical PC:
@@ -138,6 +159,38 @@ show running-config | include username|domain-name
 ```
 
 Apply the SSH bootstrap from the matching CORE BABA or CORE TAAS README.
+
+For the working local `admin` account, both ranges must contain these lines:
+
+```cisco
+line vty 0 4
+ login local
+ transport input ssh
+
+line vty 5 14
+ login local
+ transport input ssh
+```
+
+If the running configuration shows plain `login`, use the switch console—not the failing SSH session—to repair it:
+
+```cisco
+enable
+configure terminal
+line vty 0 4
+ login local
+ transport input ssh
+ exit
+line vty 5 14
+ login local
+ transport input ssh
+ exit
+end
+write memory
+show running-config | section line vty
+```
+
+This SSH prerequisite was confirmed in the live lab: BABA already used `login local`, while TAAS failed until both VTY ranges were changed from plain `login` to `login local`.
 
 ## No Acceptable KEX, Host Key, Cipher, or MAC
 
@@ -228,6 +281,47 @@ If the copy reports `0B`, check `C:\Users\Administrator\ansible-lab` in the VS C
 sudo docker cp /mnt/c/Users/Administrator/ansible-lab/<PLAYBOOK>.yml semaphore:/ansible/<PLAYBOOK>.yml
 sudo docker exec semaphore ls -lh /ansible/<PLAYBOOK>.yml
 ```
+
+## `Could Not Match Supplied Host Pattern`
+
+Example warning:
+
+```text
+Could not match supplied host pattern, ignoring: taas
+```
+
+This means the selected inventory does not contain the group named by the playbook. Ansible usually skips the play, so no switch configuration is applied. Do not solve it by changing a TAAS playbook from `hosts: taas` to `hosts: cisco`; that could target BABA too.
+
+First inspect the playbook and CLI inventory copies.
+
+**Run on: VS Code TERMINAL → VM → WSL UBUNTU**
+
+```bash
+sudo docker exec semaphore sed -n '1,40p' /ansible/taas-trunk.yml
+sudo docker exec semaphore ansible-inventory -i /ansible/inventory.ini --graph
+sudo docker exec semaphore grep -n -A2 '^\[taas\]' /ansible/inventory.ini
+```
+
+The playbook must say `hosts: taas`. The inventory graph must contain both `@baba` and `@taas`, with the correct host under each group.
+
+Then inspect the inventory actually selected by the Semaphore template.
+
+**Do in: PHYSICAL PC → WEB BROWSER → SEMAPHORE GUI**
+
+1. Open the failed TAAS task template and confirm **Inventory** is `Cisco Inventory`.
+2. Open **Inventory → Cisco Inventory**.
+3. Confirm the inline content contains a `[taas]` section with `taas ansible_host=10.~~.1.2` after replacing `~~` with the real monitor number.
+4. Confirm it also has a separate `[baba]` section; do not put both devices only under `[cisco]`.
+5. Save the inventory, rerun `TAAS — Show Version`, and require `failed=0` and `unreachable=0` before retrying a configuration template.
+
+The GUI inventory and `/ansible/inventory.ini` are separate in the current lab. A successful `ansible-inventory` terminal check does not prove that the Semaphore GUI entry is current.
+
+### Screenshot guide: Corrected TAAS inventory target
+
+- **Capture:** `Cisco Inventory` in Semaphore and the bottom of the successful `TAAS — Show Version` result.
+- **Success must show:** a `[taas]` group containing the TAAS management address and a recap with `failed=0`, `unreachable=0`.
+- **Hide:** credentials, tokens, passwords, and unrelated device entries.
+- **Status:** Screenshot pending.
 
 ## VS Code File Does Not Appear in WSL
 

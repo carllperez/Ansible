@@ -11,7 +11,7 @@ You click a Semaphore task
         ↓
 Semaphore runs an Ansible YAML playbook
         ↓
-Ansible reads the selected switch from inventory.ini
+Ansible reads the selected switch from Cisco Inventory in Semaphore
         ↓
 Ansible connects to the switch over SSH
         ↓
@@ -31,7 +31,7 @@ The first console connection is still required. A factory-default switch does no
 | Docker | The program that runs Semaphore in an isolated container. |
 | Container | The running Semaphore environment. Its name in this lab is `semaphore`. |
 | Ansible | The automation program that connects to Cisco IOS and runs playbooks. |
-| Inventory | The file that tells Ansible which switches exist and how to reach them. |
+| Inventory | The device list that tells Ansible which switches exist and how to reach them. The working Semaphore project stores it in the `Cisco Inventory` GUI entry; `/ansible/inventory.ini` is the matching CLI copy. |
 | Playbook | A YAML file containing an ordered set of Ansible tasks. |
 | YAML | The indentation-sensitive text format used by Ansible playbooks. |
 | Semaphore | The web interface used to organize and run Ansible playbooks. |
@@ -80,6 +80,8 @@ GitHub holds the tutorial copy. VS Code holds the working copy that will eventua
 
 Editing the GitHub page, saving in VS Code, and copying into the Semaphore container are three different actions. A change is not used by Semaphore until the saved VM file is copied to `semaphore:/ansible`.
 
+Inventory is the exception in the current working lab: Semaphore tasks read the inline `Cisco Inventory` content saved in the GUI, while terminal syntax and manual tests read `/ansible/inventory.ini`. Keep those two inventories identical. Changing only one can make the GUI behave differently from the terminal.
+
 ## Understand the Two File Sets
 
 ### Original Day 1 files
@@ -111,6 +113,22 @@ New users should complete one original Day 1 deployment before using the reusabl
 - After a failed task, stop. Let the current operator collect the error before anyone else retries or changes a file.
 
 The VM folder and `/ansible` container folder are shared working locations. One person’s copied file can affect the next person’s task, so verify the filename and target immediately before every run.
+
+## How to Use the Screenshot Segments
+
+Some steps include a **Screenshot guide** directly below them. The actual images are still pending; the guide tells the team exactly what a useful screenshot should contain.
+
+When screenshots are added later:
+
+- capture only the application or terminal area needed for the step;
+- keep the command and its successful result visible in the same image when possible;
+- use the monitor number shown in the surrounding example, or clearly label a different one;
+- hide passwords, private keys, camera client identifiers, browser sessions, and unrelated device configuration;
+- do not hide the hostname, relevant management IP, filename, task name, or success result needed to teach the step;
+- add a short caption explaining what the learner should notice;
+- never use a screenshot as the only instruction—keep the written steps and commands.
+
+An error screenshot must show the first failed task and the final recap. Before sharing it, remove credentials and unrelated sensitive configuration.
 
 ## Before You Begin
 
@@ -158,9 +176,9 @@ Stop at the first failed checkpoint.
 | Stage | Action | Pass condition |
 |---:|---|---|
 | 1 | Back up the current switch configuration. | The running configuration has been saved or copied for recovery. |
-| 2 | Bootstrap management IP and SSH from the Cisco console. | `show ip ssh` is enabled and the management IP is correct. |
+| 2 | Bootstrap management IP and SSH from the Cisco console. | `show ip ssh` is enabled, the management IP is correct, and both VTY ranges show `login local` plus `transport input ssh`. |
 | 3 | Test SSH from Ubuntu. | A manual SSH login reaches the intended switch. |
-| 4 | Create and inspect `inventory.ini`. | BABA and TAAS are in separate groups with the correct IPs. |
+| 4 | Create and inspect both inventory copies. | `Cisco Inventory` in the GUI and `/ansible/inventory.ini` both contain separate BABA and TAAS groups with the same IPs. |
 | 5 | Copy files into `semaphore:/ansible`. | Every required file exists and has a non-zero size. |
 | 6 | Run syntax checks. | Every command reports the playbook name with no syntax error. |
 | 7 | Run Show Version. | `failed=0` and `unreachable=0`. |
@@ -197,11 +215,11 @@ VS Code on the physical PC
   → Remote-SSH to Windows Server 208.8.8.200
   → save under C:\Users\Administrator\ansible-lab
   → WSL sees the same file under /mnt/c/Users/Administrator/ansible-lab
-  → docker cp copies it into semaphore:/ansible
-  → Semaphore runs the container copy
+  → docker cp copies YAML into semaphore:/ansible
+  → Semaphore runs the container YAML with its saved GUI inventory
 ```
 
-Saving a file in VS Code does not automatically update the copy inside the container. Run the matching `docker cp` command after every edit.
+Saving a YAML file in VS Code does not automatically update the copy inside the container. Run the matching `docker cp` command after every YAML edit. When device addresses or groups change, also update both the VS Code/container `inventory.ini` copy and the inline `Cisco Inventory` in Semaphore.
 
 ## When Something Does Not Match
 

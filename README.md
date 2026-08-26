@@ -6,6 +6,8 @@ This repository is a complete, reproducible tutorial for the Cisco automation la
 
 Begin with [Start Here — Beginner Orientation](START-HERE.md). It explains the terminology, the five places where commands are entered, the difference between read-only and configuration tasks, and the checkpoint that must pass before each next step.
 
+The tutorials also include visible **Screenshot guide** segments beneath steps where an image would help. The images are still pending; each segment identifies what to capture, what success must show, and what sensitive information must be hidden.
+
 Do not start by pressing a configuration button in Semaphore. First identify the assigned monitor number, confirm the physical switches and cabling, back up the switches, and complete the read-only connection tests.
 
 VS Code runs on the physical PC and saves the working YAML over SSH into `C:\Users\Administrator\ansible-lab` on the Windows Server VM. WSL sees the same folder at `/mnt/c/Users/Administrator/ansible-lab`. Semaphore stays in its existing Docker container inside Ubuntu and is not rebuilt or migrated.
@@ -88,8 +90,8 @@ Cisco-Ansible/
 
 - BABA playbooks use `hosts: baba`; TAAS playbooks use `hosts: taas`. This prevents BABA-only DHCP and access-port configuration from being sent to TAAS.
 - Configuration commands are derived from `DAY1-May5-SirRob.txt`. SSH commands are documented separately as the minimum automation prerequisite.
-- SSH is documented as a prerequisite. Both Day 1 base playbooks keep Sir Rob's VTY `password pass` and `login` commands; they do not add unrelated device configuration.
-- `baba-camera-dhcp.yml` is deliberately marked **DO NOT RUN** until real camera client identifiers replace `001a.xxxx.yyyy`.
+- Sir Rob's original VTY `password pass` and `login` commands remain visible in the source-reference sections. The runnable base playbooks intentionally use `login local` and `transport input ssh` on VTY 0-4 and 5-14 because the live lab proved that plain `login` prevented Semaphore from authenticating with the local `admin` account. This is clearly labeled as an Ansible/SSH prerequisite.
+- `baba-camera-dhcp.yml` is deliberately marked **DO NOT RUN** until real camera client identifiers replace `001a.xxxx.yyyy`; an assertion also stops the play before configuration while the placeholders remain or the two values match.
 - `interface.yml`, `baba.yml`, and other earlier test files are not part of the final Day1SirRob playbook set.
 - Back up the device configuration and run the read-only `show-version.yml` test before any configuration playbook.
 - The original Day 1 files retain `~~` for exact reusable documentation. Use `Reusable-Multi-Monitor/` when managing several monitor numbers with one set of playbooks.
@@ -97,7 +99,7 @@ Cisco-Ansible/
 ## Recommended Run Order
 
 1. Bootstrap management IP and SSH on both Cisco devices from the Cisco console.
-2. Build `inventory.ini` and replace every `~~`.
+2. Build `inventory.ini`, replace every `~~`, and copy the same BABA/TAAS group definitions into the working Semaphore GUI inventory.
 3. Run both `show-version.yml` playbooks.
 4. Run `taas-base.yml` and `baba-base.yml`, then repeat both read-only connection tests.
 5. Run `taas-trunk.yml`, then the BABA trunk/LACP playbook on the other side.
