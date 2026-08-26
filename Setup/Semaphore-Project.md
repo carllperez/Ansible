@@ -34,9 +34,13 @@ Before using the GUI, verify from WSL that the required YAML file exists inside 
 ### Screenshot guide: Cisco credential entry
 
 - **Capture:** the Key Store list showing an entry named `Cisco Admin`.
-- **Success must show:** the key name and credential type only.
+- **Success must show:** the Cisco login key name and credential type only. The existing lab screenshot names this working entry `Cisco SSH Credentials`; keep a working existing name instead of creating a duplicate.
 - **Hide:** the password, secret fields, private keys, and browser password-manager prompts.
-- **Status:** Screenshot pending.
+- **Status:** Included below.
+
+The Key Store list confirms that the Cisco login credential and the local repository key exist without revealing their secret values.
+
+<img width="1918" height="918" alt="Semaphore Key Store listing Cisco SSH Credentials and the Local Repository Key without exposing passwords" src="https://github.com/user-attachments/assets/3b7e876f-d3e7-4dc2-9634-158927bb7e48" />
 
 ## 2. Verify or Create the Inventory
 
@@ -79,7 +83,13 @@ The inventory must contain separate `baba` and `taas` groups. Never point BABA-o
 - **Capture:** the saved `Cisco Inventory` details page without exposing credentials.
 - **Success must show:** separate `[baba]` and `[taas]` groups, both monitor-specific addresses, and the selected `Cisco Admin` credential.
 - **Hide:** passwords and any unrelated production inventory entries.
-- **Status:** Screenshot pending.
+- **Status:** Included below.
+
+The first view shows the inventory name, selected Cisco credential, and Static type. The second expanded view makes the separate `[baba]`, `[taas]`, and `[cisco:children]` groups readable.
+
+<img width="1917" height="961" alt="Semaphore Cisco Inventory editor showing the selected Cisco credential and separate BABA and TAAS entries" src="https://github.com/user-attachments/assets/cf38915d-80c9-49f4-9d27-8952d477e716" />
+
+<img width="1920" height="984" alt="Expanded Semaphore inventory showing separate baba and taas groups plus the cisco children group and network CLI variables" src="https://github.com/user-attachments/assets/96e1d753-4353-4767-9dd0-11e9861a2296" />
 
 ## 3. Verify or Create the Repository
 
@@ -99,7 +109,13 @@ If Semaphore asks for a Git URL but does not accept the local path, stop and con
 - **Capture:** the saved `Cisco Playbooks` repository details.
 - **Success must show:** the local path `/ansible` and the expected access-key selection.
 - **Hide:** unrelated repository URLs, tokens, and private access keys.
-- **Status:** Screenshot pending.
+- **Status:** Included below.
+
+The repository list and edit form both confirm that Semaphore reads playbooks from the local `/ansible` directory.
+
+<img width="1917" height="913" alt="Semaphore repository list showing Cisco Playbooks at the local path slash ansible" src="https://github.com/user-attachments/assets/2069f7ec-6c22-4e42-be88-a071fee0d6c0" />
+
+<img width="1920" height="914" alt="Semaphore Edit Repository form showing Cisco Playbooks, local path slash ansible, and Local Repository Key" src="https://github.com/user-attachments/assets/ba621a86-abcb-4a53-835d-ff12d2225976" />
 
 ## 4. Verify or Create Task Templates
 
@@ -153,9 +169,13 @@ TAAS files → hosts: taas
 ### Screenshot guide: Separate BABA and TAAS templates
 
 - **Capture:** the Task Templates list with the BABA and TAAS names visible.
-- **Success must show:** separate Show Version, base, trunk/LACP, and BABA-only task names; the camera task must be clearly marked **DO NOT RUN**.
+- **Success must show:** separate BABA and TAAS task names with their correct playbook, inventory, and repository columns. If a camera task is present, it must be clearly marked **DO NOT RUN**.
 - **Hide:** credentials and unrelated project names.
-- **Status:** Screenshot pending.
+- **Status:** Included below.
+
+This working Task Templates list shows separate BABA and TAAS configuration tasks plus read-only show tasks. Older filenames visible in this historical screenshot may differ from the corrected repository; always use the filename table immediately above.
+
+<img width="1920" height="915" alt="Semaphore Task Templates list showing separate BABA and TAAS tasks with successful status" src="https://github.com/user-attachments/assets/89d258b2-95fe-4913-bea6-d6297005877b" />
 
 ## 5. First Test
 
@@ -170,10 +190,16 @@ If either value is non-zero, open the task output, copy the complete first error
 
 ### Screenshot guide: Successful read-only task
 
-- **Capture:** the end of a Show Version task in Semaphore.
-- **Success must show:** the task name, target hostname, Cisco version output, and recap with `failed=0` and `unreachable=0`.
+- **Capture:** the output and end recap of a read-only show task in Semaphore.
+- **Success must show:** the task name, target hostnames, returned Cisco data, and a recap with `failed=0` and `unreachable=0`.
 - **Hide:** credentials, session tokens, and unrelated device configuration.
-- **Status:** Screenshot pending.
+- **Status:** Included below.
+
+This example uses the read-only **Show IP Interface Brief** task. For a new deployment, still run the BABA and TAAS **Show Version** templates first as instructed above. The first image shows returned interface data from both hosts; the second shows the final recap with no failures or unreachable devices.
+
+<img width="996" height="727" alt="Successful Semaphore Show IP Interface Brief task displaying read-only Cisco interface data for BABA" src="https://github.com/user-attachments/assets/1e6d9b91-7579-4c25-8cb4-8aeba3fe8cab" />
+
+<img width="991" height="600" alt="Semaphore read-only task recap showing BABA and TAAS with failed zero and unreachable zero" src="https://github.com/user-attachments/assets/12f841d3-3250-4431-8bc1-09b214d6a61b" />
 
 ## Passing Checkpoint
 

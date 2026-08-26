@@ -62,7 +62,15 @@ If the status area does not show that connection, stop. Files created in an ordi
 - **Capture:** the complete VS Code window after Remote-SSH connects.
 - **Success must show:** `SSH: 208.8.8.200` in the lower-left status area.
 - **Hide:** unrelated open files, saved credentials, and personal account information.
-- **Status:** Screenshot pending.
+- **Status:** Included below.
+
+The complete VS Code view shows the remote VM folder, the YAML files, and `SSH: 208.8.8.200` in the lower-left corner.
+
+<img width="1018" height="768" alt="VS Code connected by Remote SSH to 208.8.8.200 with the ansible-lab YAML files visible" src="https://github.com/user-attachments/assets/04996a4a-0c81-4d45-b696-dd00fbaca8fd" />
+
+Zoomed view of the Remote-SSH connection indicator:
+
+<img width="122" height="26" alt="Zoomed VS Code status showing SSH connection to 208.8.8.200" src="https://github.com/user-attachments/assets/ce9c1761-60f9-4c7e-a8bf-0edec3309ead" />
 
 ## 2. Open the YAML Folder on the VM
 
@@ -167,7 +175,11 @@ For the original Day 1 working files, the grep command should return no unreplac
 - **Capture:** the VS Code terminal after `ls -lh /mnt/c/Users/Administrator/ansible-lab`.
 - **Success must show:** the expected YAML filenames and sizes greater than zero.
 - **Hide:** unrelated filenames or folders belonging to other projects.
-- **Status:** Screenshot pending.
+- **Status:** Included below.
+
+The WSL terminal lists the same YAML files saved in the Windows VM folder. The older test files visible in this historical screenshot are not part of the required deployment workflow; follow the file list in this guide.
+
+<img width="711" height="336" alt="WSL terminal listing non-empty YAML files in the Windows Server ansible-lab folder" src="https://github.com/user-attachments/assets/019319ad-49b4-442a-89d1-a999ff18c6bb" />
 
 ## 6. Copy the Day 1 Files into Existing Semaphore
 

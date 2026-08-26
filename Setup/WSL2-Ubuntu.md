@@ -45,7 +45,15 @@ If no distribution is installed, continue through the complete guide.
 - **Capture:** Administrator PowerShell after `wsl -l -v` finishes.
 - **Success must show:** an Ubuntu row and `VERSION 2`.
 - **Hide:** unrelated distribution names if they reveal another project; no password should appear.
-- **Status:** Screenshot pending.
+- **Status:** Included below.
+
+The full Windows Server view shows `wsl -l -v` reporting Ubuntu as WSL version 2, followed by Ubuntu opening successfully.
+
+<img width="1027" height="768" alt="Windows Server PowerShell showing Ubuntu running as WSL version 2 and an Ubuntu prompt opening successfully" src="https://github.com/user-attachments/assets/996b8345-f2ce-4c9e-beff-5f1e022676c9" />
+
+Zoomed view of the `wsl -l -v` result:
+
+<img width="302" height="50" alt="Zoomed PowerShell result showing Ubuntu running and VERSION 2" src="https://github.com/user-attachments/assets/a2713abd-e3ca-4180-aed2-661cebe9154c" />
 
 ## 2. Enable Nested Virtualization
 
@@ -222,4 +230,8 @@ Continue with [Docker and the existing Semaphore container](Docker-Semaphore.md)
 - **Capture:** `wsl -l -v` showing version 2 beside an open Ubuntu prompt.
 - **Success must show:** Ubuntu opens without a virtualization error.
 - **Hide:** anything typed as a Linux password; passwords do not echo and must never be staged for a screenshot.
-- **Status:** Screenshot pending.
+- **Status:** Included below. The complete checkpoint is also visible in the first screenshot on this page.
+
+Zoomed view of the successful Ubuntu prompt:
+
+<img width="433" height="34" alt="Zoomed Ubuntu terminal prompt showing the WSL Ubuntu environment opened successfully" src="https://github.com/user-attachments/assets/a11ede68-3303-4503-81c6-c0c707e5d4e5" />

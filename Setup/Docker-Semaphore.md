@@ -91,7 +91,11 @@ cat /tmp/dockerd.log
 - **Capture:** the Ubuntu terminal immediately after `sudo docker ps`.
 - **Success must show:** container name `semaphore`, an `Up` status, and the published port if shown.
 - **Hide:** unrelated container names, environment values, registry credentials, or tokens.
-- **Status:** Screenshot pending.
+- **Status:** Included below.
+
+This example shows the existing `semaphore` container running and publishing port `3000`.
+
+<img width="976" height="113" alt="Ubuntu terminal showing the Semaphore Docker container running with port 3000 published" src="https://github.com/user-attachments/assets/c4a02d39-faf8-4da6-aced-337307227bbe" />
 
 ## 3. Verify the Existing `/ansible` Directory
 
@@ -201,10 +205,14 @@ The WSL address can change after WSL or the VM restarts. If `localhost:3000` sti
 
 ### Screenshot guide: Semaphore opens from the physical PC
 
-- **Capture:** the browser with `http://208.8.8.200:3000` visible and the Semaphore project page open.
-- **Success must show:** the expected Semaphore page loads through the VM address.
+- **Capture:** the browser with `http://208.8.8.200:3000` visible and the Semaphore login or project page open.
+- **Success must show:** the expected Semaphore page loads through the VM address. Reaching the login page confirms the browser connection; log in to continue to the project.
 - **Hide:** passwords, saved-login prompts, tokens, and any task output containing credentials.
-- **Status:** Screenshot pending.
+- **Status:** Included below.
+
+The Semaphore login page is loading through the Windows Server VM address. This screenshot does not reveal a username or password.
+
+<img width="1920" height="1030" alt="Browser showing the Semaphore login page at the Windows Server VM address on port 3000" src="https://github.com/user-attachments/assets/223a6991-0363-45a6-b4bd-8b9bc360a017" />
 
 ## Passing Checkpoint
 
