@@ -66,6 +66,8 @@ The following Cisco blocks show the complete TAAS scope being converted. Cisco a
 
 These blocks are a reference for comparing the playbooks with Sir Rob’s source. They are not one large paste block. Follow the numbered bootstrap and Semaphore sections below for the actual procedure.
 
+The source reference below retains Sir Rob's plain VTY `login` commands. The runnable `taas-base.yml` intentionally uses `login local` and `transport input ssh` on VTY 0-4 and 5-14 because the live lab confirmed that Semaphore could not authenticate to TAAS with plain `login`. This is an automation prerequisite, not a claim that the SSH commands came from the Day 1 source.
+
 ### A. CORE TAAS Basic Layer 3
 
 ```cisco
@@ -200,7 +202,13 @@ Continue:
 
 ```cisco
 ip ssh version 2
-line vty 0 14
+line vty 0 4
+ login local
+ transport input ssh
+ exec-timeout 0 0
+ exit
+
+line vty 5 14
  login local
  transport input ssh
  exec-timeout 0 0
@@ -232,7 +240,12 @@ ssh admin@10.71.1.2
 
 The bootstrap checkpoint passes only when the hostname and management address are correct, `show ip ssh` reports SSH enabled, and the manual Ubuntu SSH login succeeds. Stop here if any check fails.
 
-<!-- SCREENSHOT: TAAS Vlan1 address and SSH enabled -->
+### Screenshot guide: TAAS management and SSH bootstrap
+
+- **Capture:** the Cisco CLI results for `show ip interface brief` and `show ip ssh`.
+- **Success must show:** the correct monitor-specific Vlan1 `.2` address and SSH version 2 enabled.
+- **Hide:** password commands, secrets, RSA key material, and unrelated running configuration.
+- **Status:** Screenshot pending.
 
 ## 3. Create the Working Files through VS Code
 
@@ -269,7 +282,12 @@ grep -n -- '~~' \
 
 The command should return no lines before deployment.
 
-<!-- SCREENSHOT: TAAS YAML files open in the VS Code Remote-SSH VM folder -->
+### Screenshot guide: TAAS working files in VS Code
+
+- **Capture:** the VS Code Explorer with `C:\Users\Administrator\ansible-lab` open.
+- **Success must show:** all four TAAS working YAML filenames and the Remote-SSH connection indicator.
+- **Hide:** passwords and unrelated files.
+- **Status:** Screenshot pending.
 
 ## 4. Add TAAS to the Existing Inventory
 
@@ -297,6 +315,8 @@ ansible_ssh_common_args='-o KexAlgorithms=+diffie-hellman-group14-sha1 -o HostKe
 ```
 
 Replace every `~~` and save the VS Code file with **Ctrl+S**.
+
+This file is used for terminal syntax checks and manual Ansible commands. Semaphore's current working tasks read a separate inline GUI entry named `Cisco Inventory`. Open **Semaphore → Inventory → Cisco Inventory** and paste the same `[baba]` and `[taas]` groups with the same IP addresses. The GUI entry can still be stale even when `/ansible/inventory.ini` is correct. See [Semaphore Project Setup — Verify or Create the Inventory](../Setup/Semaphore-Project.md#2-verify-or-create-the-inventory).
 
 Check the TAAS target:
 
@@ -327,7 +347,12 @@ sudo docker exec semaphore ls -lh \
   /ansible/taas-lacp.yml
 ```
 
-<!-- SCREENSHOT: All TAAS files in the existing /ansible directory -->
+### Screenshot guide: TAAS files inside the Semaphore container
+
+- **Capture:** the `ls -lh` verification output for the inventory and four TAAS files.
+- **Success must show:** every expected filename with a size greater than zero.
+- **Hide:** unrelated container files or credentials.
+- **Status:** Screenshot pending.
 
 ## 6. Syntax-Check Every TAAS Playbook
 
@@ -360,7 +385,12 @@ Repository: Cisco Playbooks
 Inventory:  Cisco Inventory
 ```
 
-<!-- SCREENSHOT: Four separate TAAS buttons in Semaphore -->
+### Screenshot guide: Four TAAS templates
+
+- **Capture:** the Semaphore Task Templates list.
+- **Success must show:** `TAAS — Show Version`, `TAAS — Base Layer 3`, `TAAS — Trunk Ports`, and `TAAS — LACP EtherChannel` as separate templates.
+- **Hide:** credentials and unrelated projects.
+- **Status:** Screenshot pending.
 
 ## 8. Run the TAAS Playbooks in Day 1 Order
 
@@ -377,18 +407,25 @@ unreachable=0
 
 Do not run configuration templates until the read-only test succeeds.
 
+### Screenshot guide: TAAS read-only connection test
+
+- **Capture:** the bottom of the `TAAS — Show Version` Semaphore task output.
+- **Success must show:** the TAAS hostname, Cisco version output, `failed=0`, and `unreachable=0`.
+- **Hide:** credentials, tokens, and unrelated task output.
+- **Status:** Screenshot pending.
+
 ### 8.2 Base Layer 3
 
 Run `TAAS — Base Layer 3`.
 
-Because the source changes VTY authentication from the bootstrap's `login local` to `password pass` plus `login`, run `TAAS — Show Version` again immediately after the base playbook. Stop if it reports `failed` or `unreachable`.
+The runnable base playbook keeps local SSH authentication on both VTY ranges. Run `TAAS — Show Version` again immediately after the base playbook and stop if it reports `failed` or `unreachable`.
 
 This applies:
 
 - hostname and enable secret;
 - password encryption;
 - logging/domain-lookup settings;
-- console and VTY settings;
+- console settings plus VTY 0-4 and 5-14 with `login local` and SSH-only transport;
 - VLAN 1, 10, 50, and 100 SVIs with `.2` addresses and descriptions.
 
 **Verify on: CORE TAAS → CISCO CLI**
@@ -410,6 +447,13 @@ Vlan100  10.~~.100.2
 ```
 
 An SVI can remain protocol-down until the associated VLAN exists and has an active member or trunk. This tutorial does not invent a TAAS VLAN-creation block that is absent from the Day 1 source.
+
+### Screenshot guide: Successful TAAS base task
+
+- **Capture:** the base task recap and the matching `show ip interface brief` output.
+- **Success must show:** the correct hostname, monitor-specific `.2` SVI addresses, `failed=0`, and `unreachable=0`.
+- **Hide:** passwords and unrelated configuration.
+- **Status:** Screenshot pending.
 
 ### 8.3 Trunk Ports
 
@@ -438,6 +482,13 @@ The trunk and LACP configuration spans both switches. Use this complete order:
 
 It is normal for the links or bundle to remain down while only one side is configured.
 
+### Screenshot guide: TAAS trunk verification
+
+- **Capture:** the successful trunk task and `show interfaces trunk` output.
+- **Success must show:** the intended Fa0/10-12 or Port-channel trunk information after both ends are prepared.
+- **Hide:** unrelated interfaces and descriptions.
+- **Status:** Screenshot pending.
+
 ### 8.4 LACP EtherChannel
 
 Run `TAAS — LACP EtherChannel`.
@@ -462,6 +513,13 @@ show interfaces port-channel 1 | include BW
 show lacp neighbor
 show interfaces status
 ```
+
+### Screenshot guide: TAAS LACP bundle
+
+- **Capture:** `show etherchannel summary` and `show lacp neighbor` after BABA and TAAS are both configured.
+- **Success must show:** Port-channel1 up/in use and Fa0/10-12 bundled rather than `D`/down.
+- **Hide:** unrelated neighbor or infrastructure details.
+- **Status:** Screenshot pending.
 
 ## 9. Final TAAS Verification
 
@@ -494,12 +552,6 @@ The TAAS walkthrough is complete when:
 - trunking is active on the intended interfaces;
 - Port-channel1 and Fa0/10-12 are bundled on both switches;
 - the final configuration has been saved according to your organization’s change procedure.
-
-<!-- SCREENSHOT: Successful TAAS base task -->
-
-<!-- SCREENSHOT: Successful TAAS trunk task and show interfaces trunk output -->
-
-<!-- SCREENSHOT: Successful TAAS LACP task and bundled Po1 members -->
 
 ## Commands Intentionally Excluded from TAAS
 

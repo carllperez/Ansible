@@ -22,13 +22,24 @@
           - login
           - exec-timeout 0 0
 
-    - name: Configure VTY
+    - name: Configure VTY 0-4 for local SSH authentication
       ios_config:
         parents:
-          - line vty 0 14
+          - line vty 0 4
         lines:
           - password pass
-          - login
+          - login local
+          - transport input ssh
+          - exec-timeout 0 0
+
+    - name: Configure VTY 5-14 for local SSH authentication
+      ios_config:
+        parents:
+          - line vty 5 14
+        lines:
+          - password pass
+          - login local
+          - transport input ssh
           - exec-timeout 0 0
 
     - name: Configure VLAN 1 management SVI
