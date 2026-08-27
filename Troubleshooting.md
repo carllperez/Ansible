@@ -122,6 +122,10 @@ netsh interface portproxy show all
 
 The first address returned by `hostname -I` is the WSL address in this lab. Do not copy an old `172.x.x.x` example: WSL can receive a new address after a restart.
 
+> **PowerShell address warning:** `$currentWslAddress` is a variable name. Use that exact variable or type the complete literal address without a dollar sign, such as `connectaddress=172.26.38.162`. Never type `connectaddress=$172.26.38.162`, because PowerShell interprets `$172` as a variable and can save the broken address `.26.38.162`. Do not type `<` or `>` around the address, and do not select a later result such as `172.17.0.1`, which is Docker's internal bridge in this lab.
+
+Read the **Connect to ipv4** address carefully after running `netsh interface portproxy show all`. It must contain the complete first address returned by `hostname -I`. If it begins with a period or is missing the first number, repeat the delete and add commands with the correct syntax above.
+
 Check the firewall rule and create it only if it does not already exist:
 
 ```powershell
