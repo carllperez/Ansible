@@ -304,6 +304,12 @@ Do not create configuration buttons until all syntax checks pass.
 
 **Do in: SEMAPHORE GUI → TASK TEMPLATES**
 
+Check the existing Task Templates list before creating anything. If a working
+template already points to the correct playbook filename, keep it; a shorter
+display name such as `CUCM Show`, `CUCM Base`, `CUCM OSPF`, `CUCM Telephone`, or
+`CUCM Video` is acceptable. Add only missing templates. The display name does
+not select the playbook—the **Playbook Filename** field does.
+
 For every template use:
 
 ```text
@@ -326,6 +332,14 @@ Create these templates:
 | `CUCM — Discover and Assign Ephones` | `cucm-auto-discover-ephones.yml` | Automatically map BABA Fa0/5 to ephone 1 and Fa0/7 to ephone 2 |
 | `CUCM — Video` | `cucm-video.yml` | Day 1 video and H.323 slow start |
 | `CUCM — Day 1 Inter-CUCM Calls` | `cucm-inter-cucm-voip.yml` | Day 1 trusted list and outgoing peers |
+
+The three phone-maintenance buttons are not interchangeable:
+
+| Button | Use it when | What it does not do |
+|---|---|---|
+| `CUCM — Check Ephone Status` | Before and after any phone change | Does not change CUCM or restart a phone |
+| `CUCM — Discover and Assign Ephones` | A physical phone was replaced, moved, or its attempted MAC differs from CUCM | Does not run `no telephony-service` or rebuild the complete CME configuration |
+| `CUCM — Restart Ephones` | The configured MAC addresses and buttons are already correct, but the phones must reload their files | Does not discover or correct a phone MAC address |
 
 ### Step 13: Create the one-time telephony reset approval
 
@@ -406,6 +420,25 @@ The four POTS peers must contain:
 
 This button starts with `no telephony-service`. Back up CUCM immediately before running it. Confirm that one powered Cisco phone is connected to BABA Fa0/5 and another is connected to Fa0/7. The playbook discovers their MAC addresses automatically and stops before changing CUCM if either port has no unique `SEP` phone.
 
+**Run on: CORE BABA → CISCO CLI**
+
+```cisco
+show cdp neighbors FastEthernet0/5 detail
+show cdp neighbors FastEthernet0/7 detail
+```
+
+Each port must show exactly one different device ID beginning with `SEP`.
+
+**Run on: CUCM → CISCO CLI**
+
+```cisco
+copy running-config startup-config
+copy running-config flash:CUCM-before-telephony-rebuild.cfg
+show flash:
+```
+
+Do not click the rebuild button until the two CDP checks and the backup pass.
+
 Run:
 
 ```text
@@ -440,7 +473,10 @@ ephone 2 → 7144
 
 If the log says `No ephone in specified type/condition`, inspect `show ephone attempted-registrations`. If the attempted MAC addresses differ from the configured ephone MAC addresses, run `CUCM — Discover and Assign Ephones`. It corrects only the ephone assignments and reloads the phones; it does not run `no telephony-service`.
 
-### Step 19: Reload both phones when their configuration is correct
+If both phones are already registered with real IP addresses and local calls
+work in both directions, do not run the discovery button merely as a test.
+
+### Step 19: Reload both phones only when needed
 
 Run:
 
@@ -449,6 +485,10 @@ CUCM — Restart Ephones
 ```
 
 This regenerates the Day 1 phone configuration files and performs a fast restart of ephones 1 and 2. Both phones temporarily reboot. After they finish, run `CUCM — Check Ephone Status` again.
+
+Skip this button when both phones already registered after the rebuild and do
+not need another reload. It cannot correct a MAC mismatch; use `CUCM — Discover
+and Assign Ephones` for a replaced phone.
 
 ### Step 20: Enable Day 1 video
 
@@ -528,6 +568,44 @@ show running-config | section telephony-service
 ```
 
 Save the Semaphore task logs showing `failed=0` and `unreachable=0`. Hide credentials and password hashes in screenshots.
+
+## Replacing One Phone After Deployment
+
+Use this procedure after the Day 1 configuration is working. Do not repeat the
+destructive telephony-service rebuild just because one physical phone changed.
+
+1. Remove the old phone and connect the replacement to the same CORE BABA port:
+
+   ```text
+   BABA Fa0/5 → ephone 1 → primary extension ~~88
+   BABA Fa0/7 → ephone 2 → primary extension ~~44
+   ```
+
+2. Power on the replacement and wait for it to finish booting.
+3. Verify both BABA phone ports through CDP:
+
+   **Run on: CORE BABA → CISCO CLI**
+
+   ```cisco
+   show cdp neighbors FastEthernet0/5 detail
+   show cdp neighbors FastEthernet0/7 detail
+   ```
+
+   Each port must show exactly one different device ID beginning with `SEP`.
+
+4. Run `CUCM — Discover and Assign Ephones` in Semaphore. No MAC address is
+   typed into the YAML or Semaphore. The playbook reads both MAC addresses from
+   BABA, preserves the Day 1 button mappings, regenerates the phone files,
+   restarts both ephones, and saves CUCM.
+5. Wait for both phones to finish restarting. The unchanged phone can also
+   restart because the playbook validates and reapplies both fixed port-to-ephone
+   mappings.
+6. Run `CUCM — Check Ephone Status`. Both phones must be registered with real IP
+   addresses.
+7. Test calls in both directions and confirm two-way audio.
+
+If automatic discovery stops, do not enter a guessed MAC. Check phone power,
+cabling, CDP, and the BABA Fa0/5/Fa0/7 assignments first.
 
 ## Later Day 1 Sections That Still Need Real Inputs
 

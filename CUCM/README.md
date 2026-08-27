@@ -440,6 +440,23 @@ Create task templates using **Semaphore GUI → Task Templates**:
 
 For every template, select the existing project, repository `/ansible`, **Cisco Inventory**, and the Cisco login credential already used by the working BABA/TAAS tasks.
 
+Before creating a template, check whether an existing shorter name already
+points to the same playbook. Keep working entries such as `CUCM Show`, `CUCM
+Base`, `CUCM OSPF`, `CUCM Telephone`, and `CUCM Video`; add only the missing
+playbook filenames. The template name is only a label.
+
+Use the phone-maintenance buttons as follows:
+
+| Situation | Correct button |
+|---|---|
+| Inspect registration without changing anything | `CUCM — Check Ephone Status` |
+| A phone was replaced or CUCM has the wrong MAC | `CUCM — Discover and Assign Ephones` |
+| MACs/buttons are correct, but phones need to reload files | `CUCM — Restart Ephones` |
+| Build the complete Day 1 CME configuration during approved maintenance | `CUCM — Telephony Service Rebuild` |
+
+Do not use the destructive telephony rebuild to repair only a replacement-phone
+MAC address.
+
 To create the three phone-recovery buttons:
 
 1. Open **Semaphore GUI → Task Templates**.
@@ -494,8 +511,8 @@ To create the three phone-recovery buttons:
 10. Skip the base and OSPF playbooks if their complete configuration was already applied manually; use them for reviewed reconciliation only.
 11. Review the voice-port and dial-plan assignments before running the analog-phone playbook.
 12. Run the approved telephony-service rebuild. It automatically maps BABA Fa0/5 to ephone 1 and Fa0/7 to ephone 2 through CDP.
-13. Run `CUCM — Check Ephone Status`; if the MAC mapping is wrong or the phones were replaced, run `CUCM — Discover and Assign Ephones`.
-14. Run `CUCM — Restart Ephones` only when the assignments are correct but the phones need to reload their files.
+13. Run `CUCM — Check Ephone Status`; if the MAC mapping is wrong or the phones were replaced, run `CUCM — Discover and Assign Ephones`. Do not run discovery when both phones are already registered and calling correctly.
+14. Run `CUCM — Restart Ephones` only when the assignments are correct but the phones need to reload their files. It does not discover or repair MAC addresses.
 15. Run `CUCM — Day 1 Inter-CUCM Calls` only in the intended isolated Day 1 lab. It deliberately preserves `ipv4 0.0.0.0 0.0.0.0`, all active peers from the source, and the local monitor peer.
 16. Do not run the IVR or SIP sections until their placeholders and security impact have been reviewed.
 
@@ -548,6 +565,20 @@ Compare each configured `mac-address` with the label or settings screen of its p
 If `show ephone attempted-registrations` lists real phones but `show ephone` lists different configured MAC addresses with `UNREGISTERED` and `IP:0.0.0.0`, the MAC mismatch is the cause. Do not rebuild the complete telephony service. Correct only the two ephone MAC assignments.
 
 Run `CUCM — Discover and Assign Ephones`. It reads CDP on BABA Fa0/5 and Fa0/7, converts both `SEP` device identifiers to Cisco MAC format, assigns them to ephones 1 and 2, recreates the phone files, restarts both phones, and saves the result. It stops before changing CUCM unless exactly one different phone is discovered on each port.
+
+### Replacement-phone quick procedure
+
+1. Connect the replacement to the same fixed BABA phone port: Fa0/5 for ephone
+   1 or Fa0/7 for ephone 2.
+2. Wait for the phone to boot, then run the two CDP detail commands on BABA.
+3. Confirm one different `SEP` device appears on each port.
+4. Run `CUCM — Discover and Assign Ephones`; do not type a MAC address manually.
+5. Expect both phones to restart.
+6. Run `CUCM — Check Ephone Status` and test a call in each direction with
+   two-way audio.
+
+This recovery does not run `no telephony-service` and does not require the
+telephony-reset approval environment.
 
 ### Step 3: Confirm the Day 1 numbers and buttons
 
