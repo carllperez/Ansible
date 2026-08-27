@@ -25,6 +25,7 @@ Never publish inventory passwords, private keys, full device configurations, or 
 | Ansible reports `unreachable` | Inventory address, network reachability, credentials, and SSH |
 | Ansible reports `failed` after connecting | First failed task and Cisco IOS message in the output |
 | EtherChannel stays down | LACP section; inspect both switches |
+| BABA can ping CUCM but the PC/WSL cannot | BABA/CUCM OSPF, CUCM return route, then the Windows route |
 
 Do not run a configuration playbook merely to test connectivity. Use the matching `show-version` playbook.
 
@@ -195,6 +196,57 @@ show running-config | section line vty
 ```
 
 This SSH prerequisite was confirmed in the live lab: BABA already used `login local`, while TAAS failed until both VTY ranges were changed from plain `login` to `login local`.
+
+## BABA Can Ping CUCM but the PC or WSL Cannot
+
+CUCM `10.~~.100.8` is in VLAN 100, while the PC/automation side is reached through the BABA management/routed networks. A working BABA access port proves only the local VLAN 100 connection. The complete Day 1 design also requires BABA and CUCM to exchange routes with OSPF.
+
+**Run on: CORE BABA → CISCO CLI**
+
+```cisco
+show ip ospf neighbor
+show ip route ospf
+show running-config | section router ospf
+ping 10.~~.100.8 source 10.~~.1.4
+```
+
+**Run on: CUCM → CISCO CLI**
+
+```cisco
+show ip ospf neighbor
+show ip route ospf
+show running-config | section router ospf
+show ip route 0.0.0.0
+```
+
+The Day 1 OSPF blocks are:
+
+```cisco
+! CORE BABA
+router ospf 1
+ router-id 10.~~.~~.4
+ network 10.~~.0.0 0.0.255.255 area 0
+
+! CUCM
+router ospf 1
+ router-id 10.~~.100.8
+ network 10.~~.100.0 0.0.0.255 area 0
+```
+
+Do not continue to Semaphore until the neighbor state is FULL and the BABA source-address ping succeeds. In the live monitor-71 lab, missing OSPF was the reason the PC could not ping or SSH to CUCM even though the VLAN 100 interface, cable, and CUCM SSH server were working.
+
+After OSPF passes, test from Windows and then WSL:
+
+```powershell
+ping 10.~~.100.8
+Test-NetConnection 10.~~.100.8 -Port 22
+```
+
+```bash
+ping -c 4 10.~~.100.8
+```
+
+If OSPF and the source-address ping pass but Windows still fails, inspect the Windows gateway and route table. OSPF exchanges routes between Cisco devices; it does not automatically modify Windows routes.
 
 ## No Acceptable KEX, Host Key, Cipher, or MAC
 

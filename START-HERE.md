@@ -4,7 +4,7 @@ Use this page before running any command. It explains the lab in plain language 
 
 ## What This Project Does
 
-This project lets a person click a task in the Semaphore web page and have Ansible send approved Cisco configuration commands to CORE BABA or CORE TAAS over SSH.
+This project lets a person click a task in the Semaphore web page and have Ansible send approved Cisco configuration commands to CORE BABA, CORE TAAS, or the CUCM/CME router over SSH.
 
 ```text
 You click a Semaphore task
@@ -40,6 +40,8 @@ The first console connection is still required. A factory-default switch does no
 | Management IP | The address Ansible uses to reach a switch over SSH. |
 | SVI | A Cisco VLAN interface, such as `interface Vlan1`, that can hold an IP address. |
 | LACP | The protocol used to combine several physical links into one EtherChannel. |
+| OSPF | The routing protocol used by the Day 1 Edge, CORE BABA, and CUCM devices to exchange routes. |
+| CME | Cisco Unified CallManager Express, the telephony service running on the lab CUCM router. |
 
 ## Five Different Places Commands Are Entered
 
@@ -51,7 +53,7 @@ Do not paste every command into the same window. Each code block has a location 
 | **WINDOWS SERVER VM → POWERSHELL (ADMIN)** | Administrator PowerShell inside the Windows Server VM. |
 | **VS Code TERMINAL → VM → WSL UBUNTU** | VS Code terminal after entering `wsl -d Ubuntu`. |
 | **EXISTING SEMAPHORE CONTAINER** | A command executed through `sudo docker exec semaphore ...`. |
-| **CORE BABA/TAAS → CISCO CLI** | The Cisco console or an SSH session connected to that switch. |
+| **CORE BABA/TAAS/CUCM → CISCO CLI** | The Cisco console or an SSH session connected to that Cisco device. |
 
 Never type the visible prompt itself. For example, if the guide shows:
 
@@ -189,7 +191,7 @@ Stop at the first failed checkpoint.
 | 1 | Back up the current switch configuration. | The running configuration has been saved or copied for recovery. |
 | 2 | Bootstrap management IP and SSH from the Cisco console. | `show ip ssh` is enabled, the management IP is correct, and both VTY ranges show `login local` plus `transport input ssh`. |
 | 3 | Test SSH from Ubuntu. | A manual SSH login reaches the intended switch. |
-| 4 | Create and inspect both inventory copies. | `Cisco Inventory` in the GUI and `/ansible/inventory.ini` both contain separate BABA and TAAS groups with the same IPs. |
+| 4 | Create and inspect both inventory copies. | `Cisco Inventory` in the GUI and `/ansible/inventory.ini` contain separate BABA, TAAS, and CUCM groups with the same IPs. |
 | 5 | Copy files into `semaphore:/ansible`. | Every required file exists and has a non-zero size. |
 | 6 | Run syntax checks. | Every command reports the playbook name with no syntax error. |
 | 7 | Run Show Version. | `failed=0` and `unreachable=0`. |
@@ -197,6 +199,8 @@ Stop at the first failed checkpoint.
 | 9 | Configure and verify trunks/LACP on both ends. | EtherChannel members show bundled rather than `D`/down. |
 | 10 | Run BABA-only DHCP and VLAN playbooks. | The expected pools, VLANs, and ports appear. |
 | 11 | Camera reservations. | Run only after two real, reviewed client identifiers are available. |
+| 12 | Establish BABA-to-CUCM routing. | OSPF is FULL, the BABA source-address ping succeeds, and Windows/WSL can ping and SSH to CUCM. |
+| 13 | Run the CUCM read-only playbook. | `failed=0`, `unreachable=0`, and the expected CUCM/OSPF output appears. |
 
 ## Read-Only Versus Configuration Tasks
 

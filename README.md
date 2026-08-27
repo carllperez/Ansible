@@ -1,6 +1,6 @@
 # Cisco Automation with Ansible and Semaphore
 
-This repository is a complete, reproducible tutorial for the Cisco automation lab built with a physical PC, VS Code Remote-SSH, a Windows Server VMware VM, WSL2 Ubuntu, Docker, the existing Semaphore container, Ansible, CORE BABA, and CORE TAAS.
+This repository is a complete, reproducible tutorial for the Cisco automation lab built with a physical PC, VS Code Remote-SSH, a Windows Server VMware VM, WSL2 Ubuntu, Docker, the existing Semaphore container, Ansible, CORE BABA, CORE TAAS, and the CUCM/CME router.
 
 ## New to Ansible, Linux, or Cisco Automation?
 
@@ -35,7 +35,8 @@ WSL2 UBUNTU
           v
 ANSIBLE OVER SSH
   ├── CORE BABA 10.~~.1.4
-  └── CORE TAAS 10.~~.1.2
+  ├── CORE TAAS 10.~~.1.2
+  └── CUCM/CME 10.~~.100.8 (through BABA routing and OSPF)
 ```
 
 ## Start Here
@@ -49,8 +50,9 @@ Follow these guides in order:
 5. [Semaphore project, inventory, repository, and templates](Setup/Semaphore-Project.md)
 6. [CORE BABA tutorial](CORE-BABA/README.md)
 7. [CORE TAAS tutorial](CORE-TAAS/README.md)
-8. [Reusable multi-monitor deployment](Reusable-Multi-Monitor/README.md)
-9. [Troubleshooting](Troubleshooting.md)
+8. [CUCM / Cisco Unified CallManager Express tutorial](CUCM/README.md)
+9. [Reusable multi-monitor deployment](Reusable-Multi-Monitor/README.md)
+10. [Troubleshooting](Troubleshooting.md)
 
 ## Repository Contents
 
@@ -69,6 +71,7 @@ Cisco-Ansible/
 │   ├── README.md
 │   ├── show-version.yml
 │   ├── baba-base.yml
+│   ├── baba-ospf.yml
 │   ├── baba-lacp.yml
 │   ├── baba-dhcp.yml
 │   ├── baba-vlans.yml
@@ -79,6 +82,14 @@ Cisco-Ansible/
 │   ├── taas-base.yml
 │   ├── taas-trunk.yml
 │   └── taas-lacp.yml
+├── CUCM/
+│   ├── README.md
+│   ├── show-version.yml
+│   ├── cucm-base.yml
+│   ├── cucm-ospf.yml
+│   ├── cucm-analog-phones.yml
+│   ├── cucm-telephony-service.yml
+│   └── cucm-video.yml
 └── Reusable-Multi-Monitor/
     ├── README.md
     ├── inventory.example.ini
@@ -88,11 +99,13 @@ Cisco-Ansible/
 
 ## Safety and Scope
 
-- BABA playbooks use `hosts: baba`; TAAS playbooks use `hosts: taas`. This prevents BABA-only DHCP and access-port configuration from being sent to TAAS.
+- BABA playbooks use `hosts: baba`; TAAS playbooks use `hosts: taas`; CUCM playbooks use `hosts: cucm`. This prevents switch-only or voice-router-only configuration from being sent to the wrong device.
 - Configuration commands are derived from `DAY1-May5-SirRob.txt`. SSH commands are documented separately as the minimum automation prerequisite.
 - Sir Rob's original VTY `password pass` and `login` commands remain visible in the source-reference sections. The runnable base playbooks intentionally use `login local` and `transport input ssh` on VTY 0-4 and 5-14 because the live lab proved that plain `login` prevented Semaphore from authenticating with the local `admin` account. This is clearly labeled as an Ansible/SSH prerequisite.
 - `baba-camera-dhcp.yml` is deliberately marked **DO NOT RUN** until real camera client identifiers replace `001a.xxxx.yyyy`; an assertion also stops the play before configuration while the placeholders remain or the two values match.
 - `interface.yml`, `baba.yml`, and other earlier test files are not part of the final Day1SirRob playbook set.
+- The complete Day 1 topology requires the documented BABA-to-CUCM OSPF relationship before the PC, WSL, or Semaphore remote-access test. A successful local BABA VLAN 100 ping is not the final checkpoint.
+- CUCM telephony reset, placeholder phone MAC addresses, trusted-list, remote dial peers, IVR, and SIP sections require explicit voice/network-owner review before use.
 - Back up the device configuration and run the read-only `show-version.yml` test before any configuration playbook.
 - The original Day 1 files retain `~~` for exact reusable documentation. Use `Reusable-Multi-Monitor/` when managing several monitor numbers with one set of playbooks.
 
@@ -121,6 +134,7 @@ Whichever path is used, VTY 0-4 and 5-14 must use `login local` and `transport i
 6. Run `taas-lacp.yml`, then verify the bundle on both switches.
 7. Run BABA-only `baba-dhcp.yml` and `baba-vlans.yml`.
 8. Do not run `baba-camera-dhcp.yml` until the real identifiers are known.
+9. Run `baba-ospf.yml`, complete the matching CUCM console OSPF bootstrap, require a FULL BABA/CUCM neighbor, and pass the PC/WSL SSH test before any CUCM voice configuration.
 
 ## Configuration Source
 
