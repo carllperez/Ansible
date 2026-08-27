@@ -11,7 +11,7 @@ Complete this after the YAML files exist in `/ansible` and the matching CLI inve
 | Semaphore item | Purpose in this lab |
 |---|---|
 | Key Store | Holds the Cisco login credential used by Ansible. |
-| Inventory | Stores the BABA/TAAS device list used by Semaphore tasks. The current working lab uses inline content in `Cisco Inventory`. |
+| Inventory | Stores the BABA/TAAS/CUCM device list used by Semaphore tasks. The current working lab uses inline content in `Cisco Inventory`. |
 | Repository | Points to `/ansible`, where the playbook YAML files are stored. |
 | Task Template | Combines one playbook with the inventory, repository, and credential so it can be run from the GUI. |
 
@@ -60,9 +60,13 @@ baba ansible_host=10.~~.1.4
 [taas]
 taas ansible_host=10.~~.1.2
 
+[cucm]
+cucm ansible_host=10.~~.100.8
+
 [cisco:children]
 baba
 taas
+cucm
 
 [cisco:vars]
 ansible_connection=network_cli
@@ -76,16 +80,16 @@ The GUI inventory and `/ansible/inventory.ini` are separate copies in the curren
 
 If an already-working Semaphore installation uses a **file** inventory instead of inline content, preserve that working type and point it to `/ansible/inventory.ini`. Do not switch a working inventory type merely to match a screenshot.
 
-The inventory must contain separate `baba` and `taas` groups. Never point BABA-only playbooks at the combined `cisco` group.
+The inventory must contain separate `baba`, `taas`, and `cucm` groups. Never point device-specific playbooks at the combined `cisco` group.
 
 ### Screenshot guide: Cisco Inventory
 
 - **Capture:** the saved `Cisco Inventory` details page without exposing credentials.
-- **Success must show:** separate `[baba]` and `[taas]` groups, both monitor-specific addresses, and the selected `Cisco Admin` credential.
+- **Success must show:** separate `[baba]`, `[taas]`, and `[cucm]` groups, their monitor-specific addresses, and the selected `Cisco Admin` credential.
 - **Hide:** passwords and any unrelated production inventory entries.
 - **Status:** Included below.
 
-The first view shows the inventory name, selected Cisco credential, and Static type. The second expanded view makes the separate `[baba]`, `[taas]`, and `[cisco:children]` groups readable.
+The historical screenshots below predate the CUCM addition. The current inventory must also contain `[cucm]`, `cucm ansible_host=10.~~.100.8`, and `cucm` under `[cisco:children]`.
 
 <img width="1917" height="961" alt="Semaphore Cisco Inventory editor showing the selected Cisco credential and separate BABA and TAAS entries" src="https://github.com/user-attachments/assets/cf38915d-80c9-49f4-9d27-8952d477e716" />
 
@@ -119,16 +123,17 @@ The repository list and edit form both confirm that Semaphore reads playbooks fr
 
 ## 4. Verify or Create Task Templates
 
-Reuse existing working templates. Add only the missing BABA/TAAS templates, using the same repository and inventory for every template.
+Reuse existing working templates. Add only the missing BABA/TAAS/CUCM templates, using the same repository and inventory for every template.
 
 The Base Layer 3 templates are used only when the switch received the minimum management/SSH bootstrap. If Sir Rob's complete base block was already applied manually, run the matching Show Version template, verify the switch, and skip the Base Layer 3 template. A visible Semaphore button is not an instruction that it must be run.
 
-Do not create or use a `Configure Cisco Interface` template from an old `interface.yml` test. It is not part of the final BABA/TAAS template set below.
+Do not create or use a `Configure Cisco Interface` template from an old `interface.yml` test. It is not part of the final BABA/TAAS/CUCM template set below.
 
 | Template name | Playbook | Safe to run? |
 |---|---|---|
 | BABA — Show Version | `show-version-baba.yml` | Yes; read-only |
 | BABA — Base Layer 3 | `baba-base.yml` | Configuration |
+| BABA — OSPF | `baba-ospf.yml` | Configuration; required before CUCM remote access |
 | BABA — Trunk and LACP | `baba-lacp.yml` | Configuration |
 | BABA — DHCP | `baba-dhcp.yml` | Configuration |
 | BABA — VLANs and Ports | `baba-vlans.yml` | Configuration |
@@ -137,6 +142,12 @@ Do not create or use a `Configure Cisco Interface` template from an old `interfa
 | TAAS — Base Layer 3 | `taas-base.yml` | Configuration |
 | TAAS — Trunk Ports | `taas-trunk.yml` | Configuration |
 | TAAS — LACP EtherChannel | `taas-lacp.yml` | Configuration |
+| CUCM — Show Version and Routing | `show-version-cucm.yml` | Yes; read-only; run first |
+| CUCM — Base and Default Route | `cucm-base.yml` | Configuration; normally skip after full console bootstrap |
+| CUCM — OSPF | `cucm-ospf.yml` | Configuration; initial OSPF must be console-bootstrapped first |
+| CUCM — Analog Phones | `cucm-analog-phones.yml` | Configuration; review ports and dial plan |
+| CUCM — Telephony Service Rebuild | `cucm-telephony-service.yml` | **Blocked/destructive** |
+| CUCM — Video | `cucm-video.yml` | Configuration; requires ephones 1 and 2 |
 
 For each template select:
 
@@ -164,12 +175,13 @@ Before clicking Run, open the YAML and confirm its target:
 ```text
 BABA files → hosts: baba
 TAAS files → hosts: taas
+CUCM files → hosts: cucm
 ```
 
-### Screenshot guide: Separate BABA and TAAS templates
+### Screenshot guide: Separate BABA, TAAS, and CUCM templates
 
-- **Capture:** the Task Templates list with the BABA and TAAS names visible.
-- **Success must show:** separate BABA and TAAS task names with their correct playbook, inventory, and repository columns. If a camera task is present, it must be clearly marked **DO NOT RUN**.
+- **Capture:** the Task Templates list with the BABA, TAAS, and CUCM names visible.
+- **Success must show:** separate device task names with their correct playbook, inventory, and repository columns. Camera and CUCM telephony-reset tasks must be visibly blocked or marked unsafe.
 - **Hide:** credentials and unrelated project names.
 - **Status:** Included below.
 
@@ -179,12 +191,12 @@ This working Task Templates list shows separate BABA and TAAS configuration task
 
 ## 5. First Test
 
-Run these two read-only templates first:
+Run the two switch read-only templates first:
 
 1. `BABA — Show Version`
 2. `TAAS — Show Version`
 
-Both must finish with `failed=0` and `unreachable=0` before any configuration template is run.
+Both must finish with `failed=0` and `unreachable=0` before any switch configuration template is run. After the CUCM console and OSPF checkpoints in `CUCM/README.md` pass, also run `CUCM — Show Version and Routing`; it must finish with the same zero-failure recap before any voice configuration.
 
 If either value is non-zero, open the task output, copy the complete first error, and use `Troubleshooting.md`. Repeatedly clicking Run will not correct inventory, SSH, or file-path errors.
 
@@ -205,9 +217,9 @@ This example uses the read-only **Show IP Interface Brief** task. For a new depl
 
 ```text
 [ ] Cisco Admin exists once
-[ ] Cisco Inventory contains separate BABA and TAAS groups
+[ ] Cisco Inventory contains separate BABA, TAAS, and CUCM groups
 [ ] GUI inventory addresses match /ansible/inventory.ini
 [ ] Cisco Playbooks points to /ansible
-[ ] BABA and TAAS Show Version templates use the correct filenames
-[ ] Both Show Version jobs finish with failed=0 and unreachable=0
+[ ] BABA, TAAS, and CUCM read-only templates use the correct filenames
+[ ] All applicable read-only jobs finish with failed=0 and unreachable=0
 ```
