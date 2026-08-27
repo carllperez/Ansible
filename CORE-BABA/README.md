@@ -41,6 +41,7 @@ Use VS Code Remote-SSH on the physical PC to open `C:\Users\Administrator\ansibl
 |---|---|---|
 | [show-version.yml](show-version.yml) | `C:\Users\Administrator\ansible-lab\show-version-baba.yml` | Read-only SSH/Ansible test |
 | [baba-base.yml](baba-base.yml) | `C:\Users\Administrator\ansible-lab\baba-base.yml` | Base and SVI configuration |
+| [baba-ospf.yml](baba-ospf.yml) | `C:\Users\Administrator\ansible-lab\baba-ospf.yml` | Day 1 OSPF for Edge and CUCM routing |
 | [baba-lacp.yml](baba-lacp.yml) | `C:\Users\Administrator\ansible-lab\baba-lacp.yml` | Fa0/10-12 trunk and LACP |
 | [baba-dhcp.yml](baba-dhcp.yml) | `C:\Users\Administrator\ansible-lab\baba-dhcp.yml` | DHCP pools and exclusions |
 | [baba-vlans.yml](baba-vlans.yml) | `C:\Users\Administrator\ansible-lab\baba-vlans.yml` | VLANs and access/voice ports |
@@ -83,6 +84,7 @@ Before copying files to Semaphore, check that no monitor placeholders remain:
 grep -n -- '~~' \
   /mnt/c/Users/Administrator/ansible-lab/show-version-baba.yml \
   /mnt/c/Users/Administrator/ansible-lab/baba-base.yml \
+  /mnt/c/Users/Administrator/ansible-lab/baba-ospf.yml \
   /mnt/c/Users/Administrator/ansible-lab/baba-lacp.yml \
   /mnt/c/Users/Administrator/ansible-lab/baba-dhcp.yml \
   /mnt/c/Users/Administrator/ansible-lab/baba-vlans.yml \
@@ -94,7 +96,7 @@ The command should return no lines. The camera client identifiers are different 
 ### Screenshot guide: BABA working files in VS Code
 
 - **Capture:** the VS Code Explorer with `C:\Users\Administrator\ansible-lab` open.
-- **Success must show:** all six BABA working YAML filenames and the Remote-SSH connection indicator.
+- **Success must show:** all seven BABA working YAML filenames and the Remote-SSH connection indicator.
 - **Hide:** passwords, camera identifiers, and unrelated files.
 - **Status:** Screenshot pending.
 
@@ -221,6 +223,7 @@ wsl -d Ubuntu
 sudo docker cp /mnt/c/Users/Administrator/ansible-lab/inventory.ini semaphore:/ansible/inventory.ini
 sudo docker cp /mnt/c/Users/Administrator/ansible-lab/show-version-baba.yml semaphore:/ansible/show-version-baba.yml
 sudo docker cp /mnt/c/Users/Administrator/ansible-lab/baba-base.yml semaphore:/ansible/baba-base.yml
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/baba-ospf.yml semaphore:/ansible/baba-ospf.yml
 sudo docker cp /mnt/c/Users/Administrator/ansible-lab/baba-lacp.yml semaphore:/ansible/baba-lacp.yml
 sudo docker cp /mnt/c/Users/Administrator/ansible-lab/baba-dhcp.yml semaphore:/ansible/baba-dhcp.yml
 sudo docker cp /mnt/c/Users/Administrator/ansible-lab/baba-vlans.yml semaphore:/ansible/baba-vlans.yml
@@ -233,7 +236,7 @@ The file sizes must be greater than zero.
 ### Screenshot guide: BABA files inside the Semaphore container
 
 - **Capture:** the final `sudo docker exec semaphore ls -lh /ansible` output.
-- **Success must show:** `inventory.ini`, all six BABA YAML files, and sizes greater than zero.
+- **Success must show:** `inventory.ini`, all seven BABA YAML files, and sizes greater than zero.
 - **Hide:** unrelated container files or credentials.
 - **Status:** Screenshot pending.
 
@@ -244,6 +247,7 @@ The file sizes must be greater than zero.
 ```bash
 sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/show-version-baba.yml --syntax-check
 sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/baba-base.yml --syntax-check
+sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/baba-ospf.yml --syntax-check
 sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/baba-lacp.yml --syntax-check
 sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/baba-dhcp.yml --syntax-check
 sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/baba-vlans.yml --syntax-check
@@ -259,6 +263,7 @@ Use the instructions in `Setup/Semaphore-Project.md` to create these templates:
 ```text
 BABA — Show Version          → show-version-baba.yml
 BABA — Base Layer 3          → baba-base.yml
+BABA — OSPF                  → baba-ospf.yml
 BABA — Trunk and LACP        → baba-lacp.yml
 BABA — DHCP                  → baba-dhcp.yml
 BABA — VLANs and Ports       → baba-vlans.yml
@@ -386,7 +391,24 @@ show interfaces trunk
 
 Sir Rob's example contains `vlan 71` for the student-specific HRD-POLICY VLAN. This reusable package intentionally changes that one student value to `vlan ~~`; replace `~~` with the assigned monitor number before copying the playbook to Semaphore.
 
-### 6.6 Camera Reservations — Stop Here
+### 6.6 OSPF for Edge and CUCM Routing
+
+Run `BABA — OSPF` before attempting remote PC, WSL, or Semaphore access to CUCM. This is the CORE BABA block from Sir Rob's Day 1 OSPF section.
+
+The matching CUCM OSPF block must be applied from the CUCM console during its initial bootstrap because Semaphore cannot reach CUCM before the routed path exists. Follow [CUCM / Cisco Unified CallManager Express Tutorial](../CUCM/README.md).
+
+**Verify on: CORE BABA → CISCO CLI**
+
+```cisco
+show running-config | section router ospf
+show ip ospf neighbor
+show ip route ospf
+ping 10.~~.100.8 source 10.~~.1.4
+```
+
+Do not continue to CUCM automation unless the BABA/CUCM OSPF neighbor is FULL and the source-address ping succeeds.
+
+### 6.7 Camera Reservations — Stop Here
 
 Do not run `BABA — Camera Reservations` while these placeholders remain:
 
@@ -420,6 +442,8 @@ show lacp neighbor
 show vlan brief
 show ip dhcp pool
 show ip dhcp binding
+show ip ospf neighbor
+show ip route ospf
 ```
 
 The BABA walkthrough is complete when:
@@ -428,6 +452,7 @@ The BABA walkthrough is complete when:
 - the expected hostname and monitor-specific addresses are present;
 - Port-channel1 and Fa0/10-12 are bundled on both switches;
 - the expected VLANs, ports, and DHCP pools appear;
+- the expected OSPF neighbors and routes appear before CUCM automation begins;
 - `BABA — Camera Reservations` has not been run unless both real identifiers were reviewed;
 - the final configuration has been saved according to your organization’s change procedure.
 

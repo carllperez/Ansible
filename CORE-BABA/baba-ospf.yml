@@ -1,0 +1,29 @@
+---
+- name: Configure Day 1 OSPF on CORE BABA
+  hosts: baba
+  gather_facts: false
+
+  tasks:
+    - name: Enable Layer 3 routing
+      ios_config:
+        lines:
+          - ip routing
+
+    - name: Configure OSPF process 1
+      ios_config:
+        parents:
+          - router ospf 1
+        lines:
+          - router-id 10.~~.~~.4
+          - network 10.~~.0.0 0.0.255.255 area 0
+
+    - name: Configure the routed Edge link as OSPF point-to-point
+      ios_config:
+        parents:
+          - interface GigabitEthernet0/1
+        lines:
+          - ip ospf network point-to-point
+
+    - name: Save configuration
+      ios_config:
+        save_when: modified
