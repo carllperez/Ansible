@@ -29,7 +29,7 @@
         fail_msg: >-
           STOPPED: automatic discovery requires exactly one SEP phone on BABA
           Fa0/5 and one different SEP phone on BABA Fa0/7. Check the cables,
-          power, CDP, and port assignments before rebuilding telephony-service.
+          power, CDP, and port assignments before changing CUCM.
 
     - name: Convert discovered MAC addresses to Cisco dotted format
       set_fact:
@@ -48,7 +48,7 @@
           - "BABA Fa0/5 -> ephone 1 -> {{ discovered_phone1_mac }}"
           - "BABA Fa0/7 -> ephone 2 -> {{ discovered_phone2_mac }}"
 
-- name: Rebuild Day 1 CUCM telephony service
+- name: Assign the discovered phones to CUCM and reload them
   hosts: cucm
   gather_facts: false
 
@@ -57,73 +57,54 @@
     phone2_mac: "{{ hostvars['baba']['discovered_phone2_mac'] }}"
 
   pre_tasks:
-    - name: Require explicit approval and two real phone MAC addresses
+    - name: Recheck the two discovered addresses before changing CUCM
       assert:
         that:
-          - confirm_telephony_reset | default(false) | bool
+          - phone1_mac | length == 14
+          - phone2_mac | length == 14
           - phone1_mac != phone2_mac
-        fail_msg: >-
-          STOPPED: this Day 1 block begins with 'no telephony-service' and can
-          remove an existing phone configuration. Back up CUCM and set
-          confirm_telephony_reset=true only during an approved maintenance
-          window after the automatic BABA-port discovery succeeds.
+        fail_msg: "STOPPED: CDP did not provide two different dotted MAC addresses."
 
   tasks:
-    - name: Remove the existing telephony service exactly as Day 1 specifies
-      ios_config:
-        lines:
-          - no telephony-service
-
-    - name: Configure the Day 1 telephony service
-      ios_config:
-        parents:
-          - telephony-service
-        lines:
-          - no auto assign
-          - no auto-reg-ephone
-          - max-ephones 5
-          - max-dn 20
-          - ip source-address 10.~~.100.8 port 2000
-          - create cnf-files
-
-    - name: Configure ephone directory numbers
-      ios_config:
-        parents:
-          - "ephone-dn {{ item.id }}"
-        lines:
-          - "number {{ item.number }}"
-      loop:
-        - { id: 1, number: "~~11" }
-        - { id: 2, number: "~~22" }
-        - { id: 3, number: "~~33" }
-        - { id: 4, number: "~~44" }
-        - { id: 5, number: "~~55" }
-        - { id: 6, number: "~~66" }
-        - { id: 7, number: "~~77" }
-        - { id: 8, number: "~~88" }
-        - { id: 9, number: "~~99" }
-        - { id: 10, number: "~~98" }
-
-    - name: Configure ephone 1
+    - name: Assign the Fa0/5 phone to Day 1 ephone 1
       ios_config:
         parents:
           - ephone 1
         lines:
+          - no mac-address
           - "mac-address {{ phone1_mac }}"
           - type 8945
           - button 1:8 2:7 3:6 4:5
-          - restart
+        match: none
 
-    - name: Configure ephone 2
+    - name: Assign the Fa0/7 phone to Day 1 ephone 2
       ios_config:
         parents:
           - ephone 2
         lines:
+          - no mac-address
           - "mac-address {{ phone2_mac }}"
           - type 8945
           - button 1:4 2:3 3:2 4:1
-          - restart
+        match: none
 
-    - name: Save configuration
+    - name: Recreate the Day 1 phone configuration files
+      ios_config:
+        parents:
+          - telephony-service
+        lines:
+          - create cnf-files
+
+    - name: Restart both automatically assigned Day 1 phones
+      ios_config:
+        parents:
+          - "ephone {{ item }}"
+        lines:
+          - restart
+      loop:
+        - 1
+        - 2
+
+    - name: Save the automatically discovered assignments
       ios_config:
         save_when: modified

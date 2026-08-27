@@ -1,0 +1,42 @@
+---
+- name: Configure Day 1 incoming and outgoing inter-CUCM calls
+  hosts: cucm
+  gather_facts: false
+
+  tasks:
+    - name: Allow incoming calls exactly as Day 1 specifies
+      ios_config:
+        parents:
+          - voice service voip
+          - ip address trusted list
+        lines:
+          - ipv4 0.0.0.0 0.0.0.0
+
+    # Day 1 comments out the complete dial-peer 12 block, so Ansible does not
+    # send dial-peer 12 to IOS. Every active Day 1 peer is listed below.
+    - name: Configure outgoing calls to the other CUCM systems exactly as Day 1 specifies
+      ios_config:
+        parents:
+          - "dial-peer voice {{ item.peer }} Voip"
+        lines:
+          - "destination-pattern {{ item.pattern }}"
+          - "session target ipv4:{{ item.target }}"
+          - codec g711ULAW
+      loop:
+        - { peer: 11, pattern: "11..", target: "10.11.100.8" }
+        - { peer: 21, pattern: "21..", target: "10.21.100.8" }
+        - { peer: 22, pattern: "22..", target: "10.22.100.8" }
+        - { peer: 31, pattern: "31..", target: "10.31.100.8" }
+        - { peer: 32, pattern: "32..", target: "10.32.100.8" }
+        - { peer: 41, pattern: "41..", target: "10.41.100.8" }
+        - { peer: 42, pattern: "42..", target: "10.42.100.8" }
+        - { peer: 51, pattern: "51..", target: "10.51.100.8" }
+        - { peer: 52, pattern: "52..", target: "10.52.100.8" }
+        - { peer: 61, pattern: "61..", target: "10.61.100.8" }
+        - { peer: 62, pattern: "62..", target: "10.62.100.8" }
+        - { peer: 71, pattern: "71..", target: "10.71.100.8" }
+        - { peer: 72, pattern: "72..", target: "10.72.100.8" }
+        - { peer: 81, pattern: "81..", target: "10.81.100.8" }
+        - { peer: 82, pattern: "82..", target: "10.82.100.8" }
+        - { peer: 91, pattern: "91..", target: "10.91.100.8" }
+        - { peer: 92, pattern: "92..", target: "10.92.100.8" }

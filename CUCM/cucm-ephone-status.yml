@@ -1,0 +1,21 @@
+---
+- name: Read-only CUCM ephone registration and number check
+  hosts: cucm
+  gather_facts: false
+
+  tasks:
+    - name: Collect Day 1 ephone status
+      ios_command:
+        commands:
+          - show ephone registered
+          - show ephone
+          - show ephone attempted-registrations
+          - show telephony-service
+          - show running-config | section ephone-dn
+          - show running-config | section ephone 1
+          - show running-config | section ephone 2
+      register: ephone_status
+
+    - name: Display Day 1 ephone status
+      debug:
+        var: ephone_status.stdout_lines

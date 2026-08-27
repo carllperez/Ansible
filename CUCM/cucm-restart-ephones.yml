@@ -1,0 +1,22 @@
+---
+- name: Regenerate Day 1 phone files and restart both ephones
+  hosts: cucm
+  gather_facts: false
+
+  tasks:
+    - name: Recreate the Day 1 phone configuration files
+      ios_config:
+        parents:
+          - telephony-service
+        lines:
+          - create cnf-files
+
+    - name: Restart Day 1 ephones 1 and 2
+      ios_config:
+        parents:
+          - "ephone {{ item }}"
+        lines:
+          - restart
+      loop:
+        - 1
+        - 2

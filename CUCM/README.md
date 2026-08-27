@@ -2,6 +2,8 @@
 
 This guide adds the Day 1 Sir Rob CUCM router to the existing BABA, TAAS, Ansible, and Semaphore lab. In this repository, **CUCM** means the Cisco IOS router running Cisco Unified CallManager Express (CME); it is not a separate CUCM server appliance.
 
+If you are configuring the entire CUCM/CME workflow, use the numbered [Complete CUCM/CME Day 1 Runbook](RUNBOOK.md). This README provides the detailed explanations and troubleshooting behind those steps.
+
 Complete [START HERE](../START-HERE.md), the [CORE BABA tutorial](../CORE-BABA/README.md), and the BABA VLAN 100 checks before continuing.
 
 ## Critical Routing Lesson from the Live Lab
@@ -77,9 +79,9 @@ SSH is a prerequisite for Ansible. Sir Rob's source shows plain `login` under th
 - Back up the router before every configuration section.
 - Perform the initial interface, SSH, OSPF, and default-route bootstrap from the Cisco console. Semaphore cannot repair CUCM while the PC has no routed path to it.
 - `cucm-telephony-service.yml` begins with `no telephony-service`, exactly as the source does. That can remove an existing CME configuration, so the playbook is blocked unless an explicit maintenance variable is supplied.
-- Sir Rob's ephone MAC addresses `cafe.face.baba` and `fafa.caca.baba` are placeholders. The telephony playbook requires two different approved MAC values and an explicit `confirm_telephony_reset=true` maintenance variable before it changes anything.
-- The source trusted-list command permits `0.0.0.0/0`. Do not automate or apply that command on a production or Internet-connected router without a reviewed security requirement.
-- Outgoing dial peers, IVR, SIP pools, phone MAC addresses, extensions, and remote monitor destinations must be reviewed by the voice/network owner before use.
+- Sir Rob's ephone MAC addresses `cafe.face.baba` and `fafa.caca.baba` are placeholders. The automated playbooks obtain the real MAC on BABA Fa0/5 for ephone 1 and the real MAC on Fa0/7 for ephone 2 through CDP. The destructive telephony playbook still requires `confirm_telephony_reset=true` before it changes CUCM.
+- The source trusted-list command permits `0.0.0.0/0`. The standalone Day 1 inter-CUCM playbook preserves that exact command without narrowing it. Run it only in the intended isolated Day 1 lab.
+- IVR, SIP pools, SIP-phone MAC addresses, extensions, and later remote-country destinations must be reviewed by the voice/network owner before use.
 - Run only one CUCM configuration task at a time.
 
 ## Files and Exact VS Code Locations
@@ -94,14 +96,18 @@ Use the physical PC's VS Code Remote-SSH window to open `C:\Users\Administrator\
 | [cucm-analog-phones.yml](cucm-analog-phones.yml) | `C:\Users\Administrator\ansible-lab\cucm-analog-phones.yml` | Four Day 1 analog POTS dial peers |
 | [cucm-telephony-service.yml](cucm-telephony-service.yml) | `C:\Users\Administrator\ansible-lab\cucm-telephony-service.yml` | Destructive CME rebuild; blocked by default |
 | [cucm-video.yml](cucm-video.yml) | `C:\Users\Administrator\ansible-lab\cucm-video.yml` | Video and H.323 slow-start settings |
+| [cucm-inter-cucm-voip.yml](cucm-inter-cucm-voip.yml) | `C:\Users\Administrator\ansible-lab\cucm-inter-cucm-voip.yml` | Exact Day 1 incoming trusted list and active outgoing CUCM dial peers |
+| [cucm-ephone-status.yml](cucm-ephone-status.yml) | `C:\Users\Administrator\ansible-lab\cucm-ephone-status.yml` | Read-only ephone registration, MAC, button, and number check |
+| [cucm-restart-ephones.yml](cucm-restart-ephones.yml) | `C:\Users\Administrator\ansible-lab\cucm-restart-ephones.yml` | Recreate Day 1 phone files and restart ephones 1 and 2 |
+| [cucm-auto-discover-ephones.yml](cucm-auto-discover-ephones.yml) | `C:\Users\Administrator\ansible-lab\cucm-auto-discover-ephones.yml` | Discover phone MACs from BABA Fa0/5 and Fa0/7, assign them, and reload both ephones |
 
-All CUCM YAML files use:
+CUCM-only plays use:
 
 ```yaml
 hosts: cucm
 ```
 
-Do not change that to `hosts: cisco`, because the combined group contains BABA and TAAS.
+Do not change that to `hosts: cisco`, because the combined group also contains BABA and TAAS. The telephony rebuild and automatic ephone-discovery files intentionally contain a first play with `hosts: baba` to read CDP from Fa0/5 and Fa0/7, followed by a second play with `hosts: cucm` to apply the discovered addresses.
 
 ## 1. Verify the Physical BABA-to-CUCM Connection
 
@@ -360,18 +366,16 @@ grep -n -- '~~' \
   /mnt/c/Users/Administrator/ansible-lab/cucm-ospf.yml \
   /mnt/c/Users/Administrator/ansible-lab/cucm-analog-phones.yml \
   /mnt/c/Users/Administrator/ansible-lab/cucm-telephony-service.yml \
-  /mnt/c/Users/Administrator/ansible-lab/cucm-video.yml
+  /mnt/c/Users/Administrator/ansible-lab/cucm-video.yml \
+  /mnt/c/Users/Administrator/ansible-lab/cucm-inter-cucm-voip.yml \
+  /mnt/c/Users/Administrator/ansible-lab/cucm-ephone-status.yml \
+  /mnt/c/Users/Administrator/ansible-lab/cucm-restart-ephones.yml \
+  /mnt/c/Users/Administrator/ansible-lab/cucm-auto-discover-ephones.yml
 ```
 
 The command should return no lines before a working copy is used.
 
-The telephony-reset file has separate phone placeholders and must remain blocked until real values are approved:
-
-```bash
-grep -n -- 'REPLACE_WITH_PHONE' /mnt/c/Users/Administrator/ansible-lab/cucm-telephony-service.yml
-```
-
-Do not set `confirm_telephony_reset=true` merely to bypass the safety check.
+No phone MAC address needs to be typed into the YAML. The telephony playbook discovers both phones from their fixed BABA ports. Do not set `confirm_telephony_reset=true` merely to bypass the safety check.
 
 ## 9. Copy CUCM Files into the Existing Semaphore Container
 
@@ -385,6 +389,10 @@ sudo docker cp /mnt/c/Users/Administrator/ansible-lab/cucm-ospf.yml semaphore:/a
 sudo docker cp /mnt/c/Users/Administrator/ansible-lab/cucm-analog-phones.yml semaphore:/ansible/cucm-analog-phones.yml
 sudo docker cp /mnt/c/Users/Administrator/ansible-lab/cucm-telephony-service.yml semaphore:/ansible/cucm-telephony-service.yml
 sudo docker cp /mnt/c/Users/Administrator/ansible-lab/cucm-video.yml semaphore:/ansible/cucm-video.yml
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/cucm-inter-cucm-voip.yml semaphore:/ansible/cucm-inter-cucm-voip.yml
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/cucm-ephone-status.yml semaphore:/ansible/cucm-ephone-status.yml
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/cucm-restart-ephones.yml semaphore:/ansible/cucm-restart-ephones.yml
+sudo docker cp /mnt/c/Users/Administrator/ansible-lab/cucm-auto-discover-ephones.yml semaphore:/ansible/cucm-auto-discover-ephones.yml
 sudo docker exec semaphore ls -lh /ansible
 ```
 
@@ -399,6 +407,10 @@ sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/c
 sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/cucm-analog-phones.yml --syntax-check
 sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/cucm-telephony-service.yml --syntax-check
 sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/cucm-video.yml --syntax-check
+sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/cucm-inter-cucm-voip.yml --syntax-check
+sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/cucm-ephone-status.yml --syntax-check
+sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/cucm-restart-ephones.yml --syntax-check
+sudo docker exec semaphore ansible-playbook -i /ansible/inventory.ini /ansible/cucm-auto-discover-ephones.yml --syntax-check
 ```
 
 Then run only the read-only file:
@@ -421,8 +433,52 @@ Create task templates using **Semaphore GUI → Task Templates**:
 | `CUCM — Analog Phones` | `cucm-analog-phones.yml` | Configuration; verify FXS ports and dial plan |
 | `CUCM — Telephony Service Rebuild` | `cucm-telephony-service.yml` | Blocked/destructive; do not run casually |
 | `CUCM — Video` | `cucm-video.yml` | Configuration; requires ephones 1 and 2 |
+| `CUCM — Day 1 Inter-CUCM Calls` | `cucm-inter-cucm-voip.yml` | Configuration; exact unrestricted Day 1 trusted list and active dial peers |
+| `CUCM — Check Ephone Status` | `cucm-ephone-status.yml` | Read-only; use when the phones show no number |
+| `CUCM — Restart Ephones` | `cucm-restart-ephones.yml` | Recreates phone files and fast-restarts ephones 1 and 2 |
+| `CUCM — Discover and Assign Ephones` | `cucm-auto-discover-ephones.yml` | Reads CDP on BABA Fa0/5/Fa0/7, assigns both MACs, regenerates files, and restarts both phones |
 
 For every template, select the existing project, repository `/ansible`, **Cisco Inventory**, and the Cisco login credential already used by the working BABA/TAAS tasks.
+
+To create the three phone-recovery buttons:
+
+1. Open **Semaphore GUI → Task Templates**.
+2. Select **New Template**.
+3. Create the read-only button with:
+
+   ```text
+   Name:              CUCM — Check Ephone Status
+   Playbook Filename: cucm-ephone-status.yml
+   Repository:        Cisco Playbooks
+   Inventory:         Cisco Inventory
+   Type:              Task
+   ```
+
+4. Save it.
+5. Select **New Template** again.
+6. Create the restart button with:
+
+   ```text
+   Name:              CUCM — Restart Ephones
+   Playbook Filename: cucm-restart-ephones.yml
+   Repository:        Cisco Playbooks
+   Inventory:         Cisco Inventory
+   Type:              Task
+   ```
+
+7. Save it.
+8. Select **New Template** again.
+9. Create the automatic assignment button with:
+
+   ```text
+   Name:              CUCM — Discover and Assign Ephones
+   Playbook Filename: cucm-auto-discover-ephones.yml
+   Repository:        Cisco Playbooks
+   Inventory:         Cisco Inventory
+   Type:              Task
+   ```
+
+10. Save it. Do not attach the destructive telephony-reset approval environment to any of these three recovery buttons.
 
 ## 12. Recommended CUCM Run Order
 
@@ -437,7 +493,119 @@ For every template, select the existing project, repository `/ansible`, **Cisco 
 9. Run `CUCM — Show Version and Routing`.
 10. Skip the base and OSPF playbooks if their complete configuration was already applied manually; use them for reviewed reconciliation only.
 11. Review the voice-port and dial-plan assignments before running the analog-phone playbook.
-12. Do not run the telephony reset, trusted-list, outgoing dial-peer, IVR, or SIP sections until their placeholders and security impact have been reviewed.
+12. Run the approved telephony-service rebuild. It automatically maps BABA Fa0/5 to ephone 1 and Fa0/7 to ephone 2 through CDP.
+13. Run `CUCM — Check Ephone Status`; if the MAC mapping is wrong or the phones were replaced, run `CUCM — Discover and Assign Ephones`.
+14. Run `CUCM — Restart Ephones` only when the assignments are correct but the phones need to reload their files.
+15. Run `CUCM — Day 1 Inter-CUCM Calls` only in the intended isolated Day 1 lab. It deliberately preserves `ipv4 0.0.0.0 0.0.0.0`, all active peers from the source, and the local monitor peer.
+16. Do not run the IVR or SIP sections until their placeholders and security impact have been reviewed.
+
+## Both Ephones Show No Number: Step-by-Step Recovery
+
+Do not repeat the destructive telephony-service rebuild first. A missing number can mean the phones did not register, the MAC addresses do not match, the directory-number buttons are missing, or the phones have not downloaded newly generated configuration files.
+
+### Step 1: Run the read-only phone-status button
+
+**Do in: SEMAPHORE GUI → TASK TEMPLATES**
+
+Run:
+
+```text
+CUCM — Check Ephone Status
+```
+
+In the task log, inspect the output of `show ephone registered`.
+
+- If both phones appear as `REGISTERED`, continue to Step 3.
+- If no phones appear, continue to Step 2. Restarting cannot repair missing DHCP, VLAN, TFTP, or MAC information.
+
+### Step 2: Check VLAN 100, DHCP option 150, and both MAC addresses
+
+**Run on: CORE BABA → CISCO CLI**
+
+```cisco
+show interfaces FastEthernet0/5 switchport
+show interfaces FastEthernet0/7 switchport
+show ip dhcp binding
+show running-config | section ip dhcp pool VOICEVLAN
+```
+
+Success requires:
+
+- the phone ports to use voice VLAN 100;
+- both phones to receive `10.~~.100.x` addresses;
+- DHCP option 150 to point to `10.~~.100.8`.
+
+**Run on: CUCM → CISCO CLI**
+
+```cisco
+show ephone attempted-registrations
+show running-config | section ephone 1
+show running-config | section ephone 2
+```
+
+Compare each configured `mac-address` with the label or settings screen of its physical phone. The Day 1 phone type must show `type 8945`.
+
+If `show ephone attempted-registrations` lists real phones but `show ephone` lists different configured MAC addresses with `UNREGISTERED` and `IP:0.0.0.0`, the MAC mismatch is the cause. Do not rebuild the complete telephony service. Correct only the two ephone MAC assignments.
+
+Run `CUCM — Discover and Assign Ephones`. It reads CDP on BABA Fa0/5 and Fa0/7, converts both `SEP` device identifiers to Cisco MAC format, assigns them to ephones 1 and 2, recreates the phone files, restarts both phones, and saves the result. It stops before changing CUCM unless exactly one different phone is discovered on each port.
+
+### Step 3: Confirm the Day 1 numbers and buttons
+
+**Run on: CUCM → CISCO CLI**
+
+```cisco
+show running-config | section ephone-dn
+show running-config | section ephone 1
+show running-config | section ephone 2
+```
+
+For monitor 71, the first displayed line should map as follows:
+
+```text
+ephone 1 → button 1:8 → ephone-dn 8 → number 7188
+ephone 2 → button 1:4 → ephone-dn 4 → number 7144
+```
+
+If the numbers, buttons, phone type, and MAC addresses are correct, continue.
+
+### Step 4: Regenerate the files and restart both phones
+
+**Do in: SEMAPHORE GUI → TASK TEMPLATES**
+
+Run:
+
+```text
+CUCM — Restart Ephones
+```
+
+The button sends the same Day 1 commands:
+
+```cisco
+telephony-service
+ create cnf-files
+ephone 1
+ restart
+ephone 2
+ restart
+```
+
+Both phones temporarily reboot and download their regenerated files. Do not unplug them during this process.
+
+### Step 5: Verify the result
+
+After both phones finish booting, run `CUCM — Check Ephone Status` again or run directly on CUCM:
+
+```cisco
+show ephone registered
+show ephone
+```
+
+Success requires both MAC addresses to show `REGISTERED` with their assigned button and directory number. Then test locally:
+
+```text
+Phone 1 calls Phone 2: dial 7144
+Phone 2 calls Phone 1: dial 7188
+```
 
 ## Troubleshooting: BABA Can Reach CUCM but the PC Cannot
 
@@ -467,11 +635,9 @@ If OSPF is FULL and the BABA source-address ping succeeds, check the Windows gat
 
 ## Work Still Requiring Voice-Team Values
 
-The following Day 1 sections are intentionally documented as source scope but are not yet safe general-purpose buttons:
+The following later Day 1 sections are intentionally documented as source scope but are not yet runnable general-purpose buttons:
 
 - ephone 1 and 2 MAC-address assignments;
-- `ipv4 0.0.0.0 0.0.0.0` trusted-list entry;
-- outgoing VoIP dial peers for the other monitor networks;
 - IVR/TCL application filenames and parameters;
 - SIP phone MAC addresses, usernames, passwords, and remote SIP target.
 
