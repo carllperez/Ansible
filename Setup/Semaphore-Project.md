@@ -148,6 +148,10 @@ Do not create or use a `Configure Cisco Interface` template from an old `interfa
 | CUCM — Analog Phones | `cucm-analog-phones.yml` | Configuration; review ports and dial plan |
 | CUCM — Telephony Service Rebuild | `cucm-telephony-service.yml` | **Blocked/destructive** |
 | CUCM — Video | `cucm-video.yml` | Configuration; requires ephones 1 and 2 |
+| CUCM — Day 1 Inter-CUCM Calls | `cucm-inter-cucm-voip.yml` | Configuration; preserves the unrestricted Day 1 trusted list and every active source dial peer |
+| CUCM — Check Ephone Status | `cucm-ephone-status.yml` | Yes; read-only phone-registration and number check |
+| CUCM — Restart Ephones | `cucm-restart-ephones.yml` | Recreates Day 1 phone files and fast-restarts ephones 1 and 2 |
+| CUCM — Discover and Assign Ephones | `cucm-auto-discover-ephones.yml` | Automatically maps BABA Fa0/5 to ephone 1 and Fa0/7 to ephone 2 through CDP |
 
 For each template select:
 
@@ -177,6 +181,8 @@ BABA files → hosts: baba
 TAAS files → hosts: taas
 CUCM files → hosts: cucm
 ```
+
+Exception: `cucm-telephony-service.yml` and `cucm-auto-discover-ephones.yml` intentionally start with `hosts: baba` to read the two phone MAC addresses from BABA CDP, then use `hosts: cucm` for the actual CUCM configuration.
 
 ### Screenshot guide: Separate BABA, TAAS, and CUCM templates
 
