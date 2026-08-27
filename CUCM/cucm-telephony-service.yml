@@ -1,0 +1,82 @@
+---
+- name: Rebuild Day 1 CUCM telephony service
+  hosts: cucm
+  gather_facts: false
+
+  vars:
+    phone1_mac: "REPLACE_WITH_PHONE_1_MAC"
+    phone2_mac: "REPLACE_WITH_PHONE_2_MAC"
+
+  pre_tasks:
+    - name: Require explicit approval and two real phone MAC addresses
+      assert:
+        that:
+          - confirm_telephony_reset | default(false) | bool
+          - phone1_mac != "REPLACE_WITH_PHONE_1_MAC"
+          - phone2_mac != "REPLACE_WITH_PHONE_2_MAC"
+          - phone1_mac != phone2_mac
+        fail_msg: >-
+          STOPPED: this Day 1 block begins with 'no telephony-service' and can
+          remove an existing phone configuration. Back up CUCM, replace both
+          phone MAC placeholders with different approved values, and set
+          confirm_telephony_reset=true only during an approved maintenance window.
+
+  tasks:
+    - name: Remove the existing telephony service exactly as Day 1 specifies
+      ios_config:
+        lines:
+          - no telephony-service
+
+    - name: Configure the Day 1 telephony service
+      ios_config:
+        parents:
+          - telephony-service
+        lines:
+          - no auto assign
+          - no auto-reg-ephone
+          - max-ephones 5
+          - max-dn 20
+          - ip source-address 10.~~.100.8 port 2000
+          - create cnf-files
+
+    - name: Configure ephone directory numbers
+      ios_config:
+        parents:
+          - "ephone-dn {{ item.id }}"
+        lines:
+          - "number {{ item.number }}"
+      loop:
+        - { id: 1, number: "~~11" }
+        - { id: 2, number: "~~22" }
+        - { id: 3, number: "~~33" }
+        - { id: 4, number: "~~44" }
+        - { id: 5, number: "~~55" }
+        - { id: 6, number: "~~66" }
+        - { id: 7, number: "~~77" }
+        - { id: 8, number: "~~88" }
+        - { id: 9, number: "~~99" }
+        - { id: 10, number: "~~98" }
+
+    - name: Configure ephone 1
+      ios_config:
+        parents:
+          - ephone 1
+        lines:
+          - "mac-address {{ phone1_mac }}"
+          - type 8945
+          - button 1:8 2:7 3:6 4:5
+          - restart
+
+    - name: Configure ephone 2
+      ios_config:
+        parents:
+          - ephone 2
+        lines:
+          - "mac-address {{ phone2_mac }}"
+          - type 8945
+          - button 1:4 2:3 3:2 4:1
+          - restart
+
+    - name: Save configuration
+      ios_config:
+        save_when: modified

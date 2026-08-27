@@ -1,0 +1,22 @@
+---
+- name: Configure Day 1 OSPF on CUCM
+  hosts: cucm
+  gather_facts: false
+
+  tasks:
+    - name: Enable Layer 3 routing
+      ios_config:
+        lines:
+          - ip routing
+
+    - name: Configure OSPF process 1
+      ios_config:
+        parents:
+          - router ospf 1
+        lines:
+          - router-id 10.~~.100.8
+          - network 10.~~.100.0 0.0.0.255 area 0
+
+    - name: Save configuration
+      ios_config:
+        save_when: modified

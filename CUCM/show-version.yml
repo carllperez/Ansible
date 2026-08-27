@@ -1,0 +1,19 @@
+---
+- name: Read-only CUCM connectivity and routing check
+  hosts: cucm
+  gather_facts: false
+
+  tasks:
+    - name: Collect CUCM identity and routing state
+      ios_command:
+        commands:
+          - show version
+          - show ip interface brief
+          - show ip ssh
+          - show ip ospf neighbor
+          - show ip route ospf
+      register: cucm_status
+
+    - name: Display CUCM status
+      debug:
+        var: cucm_status.stdout_lines

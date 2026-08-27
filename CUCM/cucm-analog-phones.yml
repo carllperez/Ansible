@@ -1,0 +1,41 @@
+---
+- name: Configure Day 1 CUCM analog phone dial peers
+  hosts: cucm
+  gather_facts: false
+
+  tasks:
+    - name: Configure analog phone dial peer 1
+      ios_config:
+        parents:
+          - dial-peer voice 1 pots
+        lines:
+          - destination-pattern ~~00
+          - port 0/0/0
+
+    - name: Configure analog phone dial peer 2
+      ios_config:
+        parents:
+          - dial-peer voice 2 pots
+        lines:
+          - destination-pattern ~~01
+          - port 0/0/1
+
+    - name: Configure analog phone dial peer 3
+      ios_config:
+        parents:
+          - dial-peer voice 3 pots
+        lines:
+          - destination-pattern ~~02
+          - port 0/0/2
+
+    - name: Configure analog phone dial peer 4
+      ios_config:
+        parents:
+          - dial-peer voice 4 pots
+        lines:
+          - destination-pattern ~~03
+          - port 0/0/3
+
+    - name: Save configuration
+      ios_config:
+        save_when: modified

@@ -1,0 +1,31 @@
+---
+- name: Enable Day 1 video calling on CUCM ephones
+  hosts: cucm
+  gather_facts: false
+
+  tasks:
+    - name: Enable video for ephone 1
+      ios_config:
+        parents:
+          - ephone 1
+        lines:
+          - video
+
+    - name: Enable H.323 slow-start under voice service VoIP
+      ios_config:
+        parents:
+          - voice service voip
+          - h323
+        lines:
+          - call start slow
+
+    - name: Enable video for ephone 2
+      ios_config:
+        parents:
+          - ephone 2
+        lines:
+          - video
+
+    - name: Save configuration
+      ios_config:
+        save_when: modified

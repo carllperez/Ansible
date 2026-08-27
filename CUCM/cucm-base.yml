@@ -1,0 +1,60 @@
+---
+- name: Configure CUCM base, SSH, and default routing
+  hosts: cucm
+  gather_facts: false
+
+  tasks:
+    - name: Configure CUCM base settings
+      ios_config:
+        lines:
+          - hostname CUCM-~~
+          - enable secret pass
+          - service password-encryption
+          - no logging console
+          - no ip domain-lookup
+          - username admin privilege 15 secret pass
+          - ip domain-name rivanit.com
+          - ip ssh version 2
+          - ip routing
+          - ip route 0.0.0.0 0.0.0.0 10.~~.100.4
+
+    - name: Configure console access
+      ios_config:
+        parents:
+          - line console 0
+        lines:
+          - password pass
+          - login
+          - exec-timeout 0 0
+
+    - name: Configure VTY 0-4 for local SSH authentication
+      ios_config:
+        parents:
+          - line vty 0 4
+        lines:
+          - login local
+          - transport input ssh
+          - exec-timeout 0 0
+
+    - name: Configure VTY 5-14 for local SSH authentication
+      ios_config:
+        parents:
+          - line vty 5 14
+        lines:
+          - login local
+          - transport input ssh
+          - exec-timeout 0 0
+
+    - name: Configure CUCM FastEthernet0/0 toward BABA VLAN 100
+      ios_config:
+        parents:
+          - interface FastEthernet0/0
+        lines:
+          - ip address 10.~~.100.8 255.255.255.0
+          - no shutdown
+          - duplex auto
+          - speed auto
+
+    - name: Save configuration
+      ios_config:
+        save_when: modified
