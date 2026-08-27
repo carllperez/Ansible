@@ -201,6 +201,7 @@ Stop at the first failed checkpoint.
 | 11 | Camera reservations. | Run only after two real, reviewed client identifiers are available. |
 | 12 | Establish BABA-to-CUCM routing. | OSPF is FULL, the BABA source-address ping succeeds, and Windows/WSL can ping and SSH to CUCM. |
 | 13 | Run the CUCM read-only playbook. | `failed=0`, `unreachable=0`, and the expected CUCM/OSPF output appears. |
+| 14 | Follow the [complete CUCM/CME runbook](CUCM/RUNBOOK.md). | Analog peers, local ephones, video, and the intended Day 1 inter-CUCM calling configuration pass their individual checkpoints. |
 
 ## Read-Only Versus Configuration Tasks
 

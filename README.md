@@ -50,7 +50,7 @@ Follow these guides in order:
 5. [Semaphore project, inventory, repository, and templates](Setup/Semaphore-Project.md)
 6. [CORE BABA tutorial](CORE-BABA/README.md)
 7. [CORE TAAS tutorial](CORE-TAAS/README.md)
-8. [CUCM / Cisco Unified CallManager Express tutorial](CUCM/README.md)
+8. [CUCM / Cisco Unified CallManager Express tutorial](CUCM/README.md) and [complete CUCM runbook](CUCM/RUNBOOK.md)
 9. [Reusable multi-monitor deployment](Reusable-Multi-Monitor/README.md)
 10. [Troubleshooting](Troubleshooting.md)
 
@@ -84,12 +84,17 @@ Cisco-Ansible/
 │   └── taas-lacp.yml
 ├── CUCM/
 │   ├── README.md
+│   ├── RUNBOOK.md
 │   ├── show-version.yml
 │   ├── cucm-base.yml
 │   ├── cucm-ospf.yml
 │   ├── cucm-analog-phones.yml
 │   ├── cucm-telephony-service.yml
-│   └── cucm-video.yml
+│   ├── cucm-video.yml
+│   ├── cucm-inter-cucm-voip.yml
+│   ├── cucm-ephone-status.yml
+│   ├── cucm-restart-ephones.yml
+│   └── cucm-auto-discover-ephones.yml
 └── Reusable-Multi-Monitor/
     ├── README.md
     ├── inventory.example.ini
@@ -99,13 +104,13 @@ Cisco-Ansible/
 
 ## Safety and Scope
 
-- BABA playbooks use `hosts: baba`; TAAS playbooks use `hosts: taas`; CUCM playbooks use `hosts: cucm`. This prevents switch-only or voice-router-only configuration from being sent to the wrong device.
+- BABA playbooks use `hosts: baba`; TAAS playbooks use `hosts: taas`; CUCM-only plays use `hosts: cucm`. The automatic ephone workflows intentionally read CDP with `hosts: baba` before applying the discovered assignments with `hosts: cucm`. This prevents switch-only or voice-router-only configuration from being sent to the wrong device.
 - Configuration commands are derived from `DAY1-May5-SirRob.txt`. SSH commands are documented separately as the minimum automation prerequisite.
 - Sir Rob's original VTY `password pass` and `login` commands remain visible in the source-reference sections. The runnable base playbooks intentionally use `login local` and `transport input ssh` on VTY 0-4 and 5-14 because the live lab proved that plain `login` prevented Semaphore from authenticating with the local `admin` account. This is clearly labeled as an Ansible/SSH prerequisite.
 - `baba-camera-dhcp.yml` is deliberately marked **DO NOT RUN** until real camera client identifiers replace `001a.xxxx.yyyy`; an assertion also stops the play before configuration while the placeholders remain or the two values match.
 - `interface.yml`, `baba.yml`, and other earlier test files are not part of the final Day1SirRob playbook set.
 - The complete Day 1 topology requires the documented BABA-to-CUCM OSPF relationship before the PC, WSL, or Semaphore remote-access test. A successful local BABA VLAN 100 ping is not the final checkpoint.
-- CUCM telephony reset, placeholder phone MAC addresses, trusted-list, remote dial peers, IVR, and SIP sections require explicit voice/network-owner review before use.
+- CUCM telephony reset, trusted-list, remote dial peers, IVR, and SIP sections require explicit voice/network-owner review before use. Day 1 SCCP phone MAC addresses are discovered automatically from the fixed BABA phone ports.
 - Back up the device configuration and run the read-only `show-version.yml` test before any configuration playbook.
 - The original Day 1 files retain `~~` for exact reusable documentation. Use `Reusable-Multi-Monitor/` when managing several monitor numbers with one set of playbooks.
 
