@@ -171,6 +171,8 @@ $currentWslAddress
 
 The value should look like `172.x.x.x`. WSL can receive a different address after WSL or the VM restarts, so never copy a previously documented address. In this lab, later addresses in the complete `hostname -I` output can include Docker's bridge address; the command above deliberately selects the first WSL address.
 
+> **PowerShell address warning:** Use either the variable `$currentWslAddress` exactly as shown below or type the literal address without a dollar sign, for example `connectaddress=172.26.38.162`. Never type `connectaddress=$172.26.38.162`: PowerShell treats `$172` as a variable and can create a broken destination such as `.26.38.162`. Do not include `<` or `>` around a literal address. Do not use the later `172.17.0.1` result; that is Docker's internal bridge in this lab.
+
 **Run on: WINDOWS SERVER VM → POWERSHELL (ADMIN)**
 
 ```powershell
@@ -178,6 +180,8 @@ netsh interface portproxy delete v4tov4 listenaddress=208.8.8.200 listenport=300
 netsh interface portproxy add v4tov4 listenaddress=208.8.8.200 listenport=3000 connectaddress=$currentWslAddress connectport=3000
 netsh interface portproxy show all
 ```
+
+Confirm that **Connect to ipv4 → Address** shows the complete first WSL address. If it starts with a period or is missing its first number, delete the rule and add it again using `$currentWslAddress` or the complete literal address without `$`.
 
 Keep the existing firewall rule. The following block creates it only when it is missing:
 
